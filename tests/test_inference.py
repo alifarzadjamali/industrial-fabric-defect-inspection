@@ -24,3 +24,19 @@ def test_tiled_inference_preserves_non_multiple_image_shape() -> None:
     )
     assert probability.shape == image.shape
     assert np.allclose(probability, 0.5)
+
+
+def test_overlapping_scaled_inference_preserves_image_shape() -> None:
+    image = np.full((51, 73), 127, dtype=np.uint8)
+    probability = predict_grayscale_image(
+        ZeroLogitModel(),
+        image,
+        torch.device("cpu"),
+        image_size=32,
+        tile_size=16,
+        overlap=8,
+        batch_size=4,
+        mixed_precision=False,
+    )
+    assert probability.shape == image.shape
+    assert np.allclose(probability, 0.5, atol=1e-6)

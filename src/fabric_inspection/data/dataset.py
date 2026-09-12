@@ -39,13 +39,18 @@ def _pad_patch(array: np.ndarray, size: int, is_mask: bool = False) -> np.ndarra
     return np.pad(array, ((0, vertical), (0, horizontal)), mode=mode)
 
 
-def _augment(image: np.ndarray, mask: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def _augment(
+    image: np.ndarray, mask: np.ndarray, profile: str = "standard"
+) -> tuple[np.ndarray, np.ndarray]:
+    if profile not in {"standard", "robust"}:
+        raise ValueError(f"Unknown augmentation profile: {profile}")
     if np.random.random() < 0.5:
         image, mask = np.fliplr(image), np.fliplr(mask)
     if np.random.random() < 0.5:
         image, mask = np.flipud(image), np.flipud(mask)
     if np.random.random() < 0.7:
-        angle = float(np.random.uniform(-7.0, 7.0))
+        limit = 10.0 if profile == "robust" else 7.0
+        angle = float(np.random.uniform(-limit, limit))
         height, width = image.shape
         transform = cv2.getRotationMatrix2D((width / 2, height / 2), angle, 1.0)
         image = cv2.warpAffine(
@@ -63,25 +68,38 @@ def _augment(image: np.ndarray, mask: np.ndarray) -> tuple[np.ndarray, np.ndarra
             borderMode=cv2.BORDER_CONSTANT,
         ).astype(bool)
     image = image.astype(np.float32) / 255.0
-    brightness = float(np.random.uniform(0.92, 1.08))
-    contrast = float(np.random.uniform(0.92, 1.08))
+    photometric_range = (0.85, 1.15) if profile == "robust" else (0.92, 1.08)
+    brightness = float(np.random.uniform(*photometric_range))
+    contrast = float(np.random.uniform(*photometric_range))
     image = (image - image.mean()) * contrast + image.mean()
     image = image * brightness
-    if np.random.random() < 0.25:
-        image += np.random.normal(0.0, np.random.uniform(0.0, 0.015), image.shape)
+    if profile == "robust" and np.random.random() < 0.25:
+        sigma = float(np.random.uniform(0.2, 1.2))
+        image = cv2.GaussianBlur(image, (0, 0), sigmaX=sigma)
+    if np.random.random() < (0.4 if profile == "robust" else 0.25):
+        noise_limit = 5.0 / 255.0 if profile == "robust" else 0.015
+        image += np.random.normal(0.0, np.random.uniform(0.0, noise_limit), image.shape)
     return np.clip(image, 0.0, 1.0), mask
 
 
 class AitexPatchDataset(Dataset[tuple[torch.Tensor, torch.Tensor]]):
     def __init__(
-        self, manifest: pd.DataFrame, split: str, image_size: int = 256, augment: bool = False
+        self,
+        manifest: pd.DataFrame,
+        split: str,
+        image_size: int = 256,
+        augment: bool = False,
+        source_size: int | None = None,
+        augmentation_profile: str = "standard",
     ) -> None:
         selected = manifest[
             (manifest["split"] == split) & manifest["has_segmentation_target"].astype(bool)
         ]
         self.rows = selected.reset_index(drop=True)
         self.image_size = image_size
+        self.source_size = source_size or image_size
         self.augment = augment
+        self.augmentation_profile = augmentation_profile
         if self.rows.empty:
             raise ValueError(f"No usable patches found for split {split!r}")
 
@@ -100,10 +118,19 @@ class AitexPatchDataset(Dataset[tuple[torch.Tensor, torch.Tensor]]):
         mask = np.zeros((height, width), dtype=bool)
         for path in _parse_mask_paths(row["mask_paths"]):
             mask |= _cached_grayscale(path)[y : y + height, x : x + width] > 0
-        image = _pad_patch(image, self.image_size)
-        mask = _pad_patch(mask, self.image_size, is_mask=True)
+        image = _pad_patch(image, self.source_size)
+        mask = _pad_patch(mask, self.source_size, is_mask=True)
+        if self.source_size != self.image_size:
+            image = cv2.resize(
+                image, (self.image_size, self.image_size), interpolation=cv2.INTER_LINEAR
+            )
+            mask = cv2.resize(
+                mask.astype(np.uint8),
+                (self.image_size, self.image_size),
+                interpolation=cv2.INTER_NEAREST,
+            ).astype(bool)
         if self.augment:
-            image, mask = _augment(image, mask)
+            image, mask = _augment(image, mask, self.augmentation_profile)
         else:
             image = image.astype(np.float32) / 255.0
         channels = np.repeat(image[None, :, :], 3, axis=0)
@@ -126,19 +153,45 @@ def make_dataloaders(
     num_workers: int,
     positive_sampling_fraction: float,
     seed: int,
+    source_size: int | None = None,
+    augmentation_profile: str = "standard",
+    small_defect_power: float = 0.0,
+    hard_negative_fabrics: tuple[str, ...] = (),
+    hard_negative_multiplier: float = 1.0,
 ) -> tuple[DataLoader, DataLoader, dict[str, int]]:
     manifest = pd.read_csv(manifest_path)
-    train_dataset = AitexPatchDataset(manifest, "train", image_size, augment=True)
-    validation_dataset = AitexPatchDataset(manifest, "validation", image_size, augment=False)
+    train_dataset = AitexPatchDataset(
+        manifest,
+        "train",
+        image_size,
+        augment=True,
+        source_size=source_size,
+        augmentation_profile=augmentation_profile,
+    )
+    validation_dataset = AitexPatchDataset(
+        manifest, "validation", image_size, augment=False, source_size=source_size
+    )
     flags = train_dataset.positive_flags
     positive_count = int(flags.sum())
     negative_count = int((~flags).sum())
     if not positive_count or not negative_count:
         raise ValueError("Balanced sampling requires positive and negative training patches")
+    positive_weights = np.ones(len(train_dataset), dtype=np.float64)
+    if small_defect_power > 0:
+        pixels = train_dataset.rows["mask_pixels"].to_numpy(dtype=np.float64)
+        positive_pixels = pixels[flags]
+        positive_weights[flags] = (
+            positive_pixels.max() / np.maximum(positive_pixels, 1.0)
+        ) ** small_defect_power
+    negative_weights = np.ones(len(train_dataset), dtype=np.float64)
+    hard = train_dataset.rows["fabric_code"].astype(str).isin(hard_negative_fabrics).to_numpy()
+    negative_weights[(~flags) & hard] = hard_negative_multiplier
+    positive_weights /= positive_weights[flags].sum()
+    negative_weights /= negative_weights[~flags].sum()
     weights = np.where(
         flags,
-        positive_sampling_fraction / positive_count,
-        (1.0 - positive_sampling_fraction) / negative_count,
+        positive_sampling_fraction * positive_weights,
+        (1.0 - positive_sampling_fraction) * negative_weights,
     )
     generator = torch.Generator().manual_seed(seed)
     sampler = WeightedRandomSampler(

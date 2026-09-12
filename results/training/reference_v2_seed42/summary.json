@@ -1,0 +1,27 @@
+{
+  "best_checkpoint": "checkpoints\\reference_v2_seed42\\best.pt",
+  "best_validation_dice": 0.4493156595591349,
+  "best_validation_loss": 0.5710771075777106,
+  "dataset": {
+    "train_negative_patches": 2615,
+    "train_patches": 2735,
+    "train_positive_patches": 120,
+    "validation_patches": 592,
+    "validation_positive_patches": 32
+  },
+  "environment": {
+    "cuda_runtime": "13.0",
+    "cudnn": 92400,
+    "device": "cuda",
+    "gpu": "NVIDIA GeForce RTX 5070 Ti",
+    "gpu_capability": [
+      12,
+      0
+    ],
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.13",
+    "torch": "2.14.0+cu130"
+  },
+  "epochs_completed": 8,
+  "seed": 42
+}

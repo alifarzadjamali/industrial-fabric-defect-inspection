@@ -21,7 +21,7 @@ from tqdm import tqdm
 
 from fabric_inspection.data.dataset import make_dataloaders
 from fabric_inspection.models.unet import ResNet18UNet
-from fabric_inspection.training.losses import BCEDiceLoss
+from fabric_inspection.training.losses import BCEDiceLoss, FocalDiceLoss
 
 
 def seed_everything(seed: int) -> None:
@@ -107,7 +107,7 @@ def _save_training_curves(history: list[dict[str, float | int]], output_path: Pa
     figure, axes = plt.subplots(1, 2, figsize=(11, 4))
     axes[0].plot(frame["epoch"], frame["train_loss"], label="Train")
     axes[0].plot(frame["epoch"], frame["validation_loss"], label="Validation")
-    axes[0].set(title="Combined BCE + Dice loss", xlabel="Epoch", ylabel="Loss")
+    axes[0].set(title="Training objective", xlabel="Epoch", ylabel="Loss")
     axes[1].plot(frame["epoch"], frame["train_dice"], label="Train")
     axes[1].plot(frame["epoch"], frame["validation_dice"], label="Validation")
     axes[1].set(title="Dice at threshold 0.5", xlabel="Epoch", ylabel="Dice", ylim=(0, 1))
@@ -138,13 +138,28 @@ def train(config: dict[str, object], config_path: Path) -> dict[str, object]:
         int(training_config["num_workers"]),
         float(data_config["positive_sampling_fraction"]),
         seed,
+        source_size=int(data_config.get("source_size", data_config["image_size"])),
+        augmentation_profile=str(data_config.get("augmentation_profile", "standard")),
+        small_defect_power=float(data_config.get("small_defect_power", 0.0)),
+        hard_negative_fabrics=tuple(
+            str(value) for value in data_config.get("hard_negative_fabrics", [])
+        ),
+        hard_negative_multiplier=float(data_config.get("hard_negative_multiplier", 1.0)),
     )
     model = ResNet18UNet(pretrained=bool(config["model"]["pretrained"])).to(device)
-    criterion = BCEDiceLoss(
-        bce_weight=float(training_config["bce_weight"]),
-        dice_weight=float(training_config["dice_weight"]),
-        positive_pixel_weight=float(training_config["positive_pixel_weight"]),
-    ).to(device)
+    if training_config.get("loss", "bce_dice") == "focal_dice":
+        criterion = FocalDiceLoss(
+            focal_weight=float(training_config["focal_weight"]),
+            dice_weight=float(training_config["dice_weight"]),
+            alpha=float(training_config["focal_alpha"]),
+            gamma=float(training_config["focal_gamma"]),
+        ).to(device)
+    else:
+        criterion = BCEDiceLoss(
+            bce_weight=float(training_config["bce_weight"]),
+            dice_weight=float(training_config["dice_weight"]),
+            positive_pixel_weight=float(training_config["positive_pixel_weight"]),
+        ).to(device)
     optimizer = AdamW(
         model.parameters(),
         lr=float(training_config["learning_rate"]),

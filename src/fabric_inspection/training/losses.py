@@ -41,3 +41,29 @@ class BCEDiceLoss(nn.Module):
             logits, targets, pos_weight=self.positive_pixel_weight
         )
         return self.bce_weight * bce + self.dice_weight * self.dice(logits, targets)
+
+
+class FocalDiceLoss(nn.Module):
+    """Focal binary cross-entropy plus soft Dice for sparse defects."""
+
+    def __init__(
+        self,
+        focal_weight: float = 0.5,
+        dice_weight: float = 0.5,
+        alpha: float = 0.75,
+        gamma: float = 2.0,
+    ) -> None:
+        super().__init__()
+        self.focal_weight = focal_weight
+        self.dice_weight = dice_weight
+        self.alpha = alpha
+        self.gamma = gamma
+        self.dice = DiceLoss()
+
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        bce = F.binary_cross_entropy_with_logits(logits, targets, reduction="none")
+        probability = torch.sigmoid(logits)
+        probability_true = probability * targets + (1 - probability) * (1 - targets)
+        alpha_true = self.alpha * targets + (1 - self.alpha) * (1 - targets)
+        focal = (alpha_true * (1 - probability_true).pow(self.gamma) * bce).mean()
+        return self.focal_weight * focal + self.dice_weight * self.dice(logits, targets)

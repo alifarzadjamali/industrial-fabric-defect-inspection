@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 import torch
 import yaml
+from PIL import Image
 from torch.utils.data import DataLoader
 
 from fabric_inspection.data.dataset import AitexPatchDataset, _seed_worker
@@ -21,6 +22,7 @@ from fabric_inspection.evaluation.metrics import (
     segmentation_counts,
     segmentation_metrics_from_counts,
 )
+from fabric_inspection.inference.tiling import predict_grayscale_image
 from fabric_inspection.models.unet import ResNet18UNet
 from fabric_inspection.training.trainer import seed_everything
 
@@ -113,6 +115,84 @@ def predict_original_images(
     if offset != len(dataset):
         raise AssertionError(f"Reconstructed {offset} of {len(dataset)} patches")
     return list(assembled.values())
+
+
+def predict_source_images(
+    model: ResNet18UNet,
+    manifest_path: Path,
+    split: str,
+    image_size: int,
+    tile_size: int,
+    overlap: int,
+    batch_size: int,
+    device: torch.device,
+    mixed_precision: bool,
+) -> list[ImagePrediction]:
+    """Infer directly from a source manifest, including overlap and scale changes."""
+
+    manifest = pd.read_csv(manifest_path)
+    usable = (
+        manifest["has_segmentation_target"].astype(bool)
+        if "has_segmentation_target" in manifest
+        else (~manifest["is_defective"].astype(bool) | manifest["mask_paths"].notna())
+    )
+    selected = manifest[(manifest["split"] == split) & usable]
+    predictions: list[ImagePrediction] = []
+    for row in selected.itertuples(index=False):
+        with Image.open(row.image_path) as image_file:
+            image = np.asarray(image_file.convert("L"))
+        target = np.zeros_like(image, dtype=bool)
+        for value in str(row.mask_paths).split("|"):
+            if value and value != "nan":
+                with Image.open(value) as mask_file:
+                    target |= np.asarray(mask_file.convert("L")) > 0
+        probability = predict_grayscale_image(
+            model,
+            image,
+            device,
+            image_size=image_size,
+            tile_size=tile_size,
+            overlap=overlap,
+            batch_size=batch_size,
+            mixed_precision=mixed_precision,
+        )
+        predictions.append(
+            ImagePrediction(
+                image_id=str(row.image_id),
+                defect_name=str(row.defect_name),
+                target_defective=bool(row.is_defective),
+                probability=probability,
+                target=target,
+            )
+        )
+    return predictions
+
+
+def _predict_configured(
+    config: dict[str, object], model: ResNet18UNet, split: str, device: torch.device
+) -> list[ImagePrediction]:
+    if "split_manifest" in config:
+        return predict_source_images(
+            model,
+            Path(config["split_manifest"]),
+            split,
+            int(config["image_size"]),
+            int(config.get("tile_size", config["image_size"])),
+            int(config.get("overlap", 0)),
+            int(config["batch_size"]),
+            device,
+            bool(config["mixed_precision"]),
+        )
+    return predict_original_images(
+        model,
+        Path(config["patch_manifest"]),
+        split,
+        int(config["image_size"]),
+        int(config["batch_size"]),
+        int(config["num_workers"]),
+        device,
+        bool(config["mixed_precision"]),
+    )
 
 
 def _segmentation_summary(
@@ -262,16 +342,7 @@ def select_and_freeze_thresholds(config: dict[str, object]) -> dict[str, object]
     output_dir = Path(config["output_dir"])
     output_dir.mkdir(parents=True, exist_ok=True)
     device, model, checkpoint_path = _runtime(config)
-    validation = predict_original_images(
-        model,
-        Path(config["patch_manifest"]),
-        "validation",
-        int(config["image_size"]),
-        int(config["batch_size"]),
-        int(config["num_workers"]),
-        device,
-        bool(config["mixed_precision"]),
-    )
+    validation = _predict_configured(config, model, "validation", device)
     segmentation_threshold, segmentation_search = select_segmentation_threshold(
         validation, [float(value) for value in config["segmentation_threshold_candidates"]]
     )
@@ -309,23 +380,15 @@ def evaluate_frozen_test(config: dict[str, object]) -> dict[str, object]:
     device, model, checkpoint_path = _runtime(config)
     if _sha256(checkpoint_path) != frozen["checkpoint_sha256"]:
         raise RuntimeError("Checkpoint changed after threshold selection; refusing test evaluation")
-    test = predict_original_images(
-        model,
-        Path(config["patch_manifest"]),
-        "test",
-        int(config["image_size"]),
-        int(config["batch_size"]),
-        int(config["num_workers"]),
-        device,
-        bool(config["mixed_precision"]),
-    )
+    evaluation_split = str(config.get("evaluation_split", "test"))
+    test = _predict_configured(config, model, evaluation_split, device)
     metrics, per_image, categories = evaluate_images(
         test,
         float(frozen["segmentation_threshold"]),
         float(frozen["image_component_threshold"]),
     )
     result = {
-        "evaluation_split": "test",
+        "evaluation_split": evaluation_split,
         "threshold_source": "validation",
         "segmentation_threshold": frozen["segmentation_threshold"],
         "image_component_threshold": frozen["image_component_threshold"],

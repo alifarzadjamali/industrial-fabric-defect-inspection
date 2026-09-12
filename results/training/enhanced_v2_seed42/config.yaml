@@ -1,0 +1,30 @@
+seed: 42
+data:
+  patch_manifest: data/processed/enhanced_patches_128.csv
+  image_size: 256
+  source_size: 128
+  positive_sampling_fraction: 0.55
+  augmentation_profile: robust
+  small_defect_power: 0.5
+  hard_negative_fabrics: ["1", "4", "6"]
+  hard_negative_multiplier: 2.0
+model:
+  encoder: resnet18
+  pretrained: true
+training:
+  epochs: 35
+  batch_size: 24
+  num_workers: 4
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  loss: focal_dice
+  focal_weight: 0.5
+  dice_weight: 0.5
+  focal_alpha: 0.75
+  focal_gamma: 2.0
+  metric_threshold: 0.5
+  mixed_precision: true
+  progress_bar: false
+  early_stopping_patience: 8
+output_dir: results/training/enhanced_v2_seed42
+checkpoint_dir: checkpoints/enhanced_v2_seed42

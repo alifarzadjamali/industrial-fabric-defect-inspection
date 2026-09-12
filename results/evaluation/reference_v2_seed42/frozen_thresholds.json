@@ -1,0 +1,42 @@
+{
+  "checkpoint": "checkpoints\\reference_v2_seed42\\best.pt",
+  "checkpoint_sha256": "dedb45f8f062807a429a49cd6a62ad4ee511499f1f1eed95c12a9e5fa6717225",
+  "image_component_threshold": 0.0041790008544921875,
+  "segmentation_threshold": 0.75,
+  "selection_split": "validation",
+  "validation_metrics": {
+    "classification": {
+      "accuracy": 0.7297297297297297,
+      "confusion_matrix": [
+        [
+          17,
+          4
+        ],
+        [
+          6,
+          10
+        ]
+      ],
+      "f1": 0.6666666666666666,
+      "false_negatives": 6,
+      "false_positives": 4,
+      "precision": 0.7142857142857143,
+      "recall": 0.625,
+      "roc_auc": 0.6607142857142857,
+      "true_negatives": 17,
+      "true_positives": 10
+    },
+    "segmentation": {
+      "dice": 0.46560240654964363,
+      "false_negative_pixels": 78240,
+      "false_positive_pixels": 296952,
+      "iou": 0.3034431287803683,
+      "macro_defective_dice": 0.10849833176735545,
+      "pixel_f1": 0.46560240654964363,
+      "pixel_precision": 0.35501023027901946,
+      "pixel_recall": 0.6762741739281547,
+      "true_negative_pixels": 38258674,
+      "true_positive_pixels": 163446
+    }
+  }
+}
