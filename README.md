@@ -13,10 +13,10 @@ the original client.
 
 ## Status
 
-Phases 0–3 are implemented: authoritative dataset preparation and audit,
+Phases 0–4 are implemented: authoritative dataset preparation and audit,
 leakage-safe splitting, a classical baseline, U-Net training, and held-out
-evaluation. Dataset files and model checkpoints are deliberately excluded from
-Git.
+evaluation with error and robustness analysis. Dataset files and model
+checkpoints are deliberately excluded from Git.
 
 ## Quick start
 
@@ -80,3 +80,15 @@ pixel recall **0.9005**, and image-level F1 **0.6286**. This is a clear gain ove
 the baseline, though precision and tiny-defect performance remain limited. See
 the [evaluation report](docs/evaluation_results.md) for the full results and
 interpretation.
+
+## Error and robustness analysis
+
+```powershell
+python scripts/analyze.py --config configs/analysis.yaml
+```
+
+All five false negatives are 10–20-pixel fuzzyball defects, and half of the false
+positives cluster on fabric 06 around a recurring vertical feature. Moderate ±3°
+rotation is the largest robustness failure, reducing Dice by 0.145–0.162. See the
+[Phase 4 analysis](docs/error_robustness_analysis.md) for measured perturbation
+results and the prioritised strengthening plan.

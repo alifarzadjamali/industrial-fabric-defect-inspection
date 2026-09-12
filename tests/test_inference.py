@@ -1,0 +1,26 @@
+import numpy as np
+import torch
+from torch import nn
+
+from fabric_inspection.inference.tiling import predict_grayscale_image
+
+
+class ZeroLogitModel(nn.Module):
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        return torch.zeros(
+            inputs.shape[0], 1, inputs.shape[2], inputs.shape[3], device=inputs.device
+        )
+
+
+def test_tiled_inference_preserves_non_multiple_image_shape() -> None:
+    image = np.full((32, 50), 127, dtype=np.uint8)
+    probability = predict_grayscale_image(
+        ZeroLogitModel(),
+        image,
+        torch.device("cpu"),
+        image_size=32,
+        batch_size=2,
+        mixed_precision=False,
+    )
+    assert probability.shape == image.shape
+    assert np.allclose(probability, 0.5)

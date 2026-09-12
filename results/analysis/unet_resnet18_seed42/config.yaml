@@ -1,0 +1,12 @@
+seed: 42
+evaluation_config: configs/evaluation.yaml
+split_manifest: data/processed/splits.csv
+output_dir: results/analysis/unet_resnet18_seed42
+robustness:
+  brightness_factors: [0.85, 1.15]
+  contrast_factors: [0.85, 1.15]
+  blur_sigma: 1.2
+  noise_standard_deviation: 5.0
+  resize_factor: 0.75
+  rotation_degrees: [-3.0, 3.0]
+

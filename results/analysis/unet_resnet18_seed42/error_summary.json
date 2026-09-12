@@ -1,0 +1,113 @@
+{
+  "case_counts": {
+    "false_negatives": 5,
+    "false_positives": 8,
+    "true_negatives": 14,
+    "true_positives": 11
+  },
+  "correlations": {
+    "horizontal_location_vs_dice": {
+      "p_value": 0.6356386177950512,
+      "rho": 0.1283725083157044
+    },
+    "local_contrast_vs_dice": {
+      "p_value": 0.165474705177607,
+      "rho": -0.36421967475618455
+    },
+    "log_ground_truth_pixels_vs_dice": {
+      "p_value": 0.0006041493735550214,
+      "rho": 0.7618392103723974
+    },
+    "vertical_location_vs_dice": {
+      "p_value": 0.35480966808338377,
+      "rho": 0.24778879512101082
+    }
+  },
+  "metrics": {
+    "classification": {
+      "accuracy": 0.6578947368421053,
+      "confusion_matrix": [
+        [
+          14,
+          8
+        ],
+        [
+          5,
+          11
+        ]
+      ],
+      "f1": 0.6285714285714286,
+      "false_negatives": 5,
+      "false_positives": 8,
+      "precision": 0.5789473684210527,
+      "recall": 0.6875,
+      "roc_auc": 0.6917613636363635,
+      "true_negatives": 14,
+      "true_positives": 11
+    },
+    "segmentation": {
+      "dice": 0.22246361068868128,
+      "false_negative_pixels": 1075,
+      "false_positive_pixels": 66926,
+      "iou": 0.1251527743827915,
+      "macro_defective_dice": 0.22173034478398654,
+      "pixel_f1": 0.22246361068868128,
+      "pixel_precision": 0.12690792391786468,
+      "pixel_recall": 0.9004906044617236,
+      "true_negative_pixels": 39768159,
+      "true_positive_pixels": 9728
+    }
+  },
+  "performance_by_size": [
+    {
+      "detection_recall": 1.0,
+      "images": 8,
+      "mean_dice": 0.3886043945478152,
+      "size_bin": "medium_257_4096"
+    },
+    {
+      "detection_recall": 1.0,
+      "images": 2,
+      "mean_dice": 0.006329113924050633,
+      "size_bin": "small_33_256"
+    },
+    {
+      "detection_recall": 0.16666666666666666,
+      "images": 6,
+      "mean_dice": 0.07103202205219362,
+      "size_bin": "tiny_1_32"
+    }
+  ],
+  "selected_cases": {
+    "best_segmentations": [
+      "0005_002_01",
+      "0016_006_02",
+      "0099_019_02",
+      "0069_023_02"
+    ],
+    "false_negatives": [
+      "0031_019_02",
+      "0032_019_02",
+      "0030_019_02",
+      "0099_019_02"
+    ],
+    "false_positives": [
+      "0013_000_06",
+      "0006_000_06",
+      "0018_000_06",
+      "0020_000_06"
+    ],
+    "true_positives": [
+      "0005_002_01",
+      "0016_006_02",
+      "0069_023_02",
+      "0065_022_00"
+    ],
+    "worst_segmentations": [
+      "0031_019_02",
+      "0032_019_02",
+      "0030_019_02",
+      "0035_019_02"
+    ]
+  }
+}
