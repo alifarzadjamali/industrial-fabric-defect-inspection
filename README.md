@@ -13,9 +13,9 @@ the original client.
 
 ## Status
 
-Phase 0 is implemented: authoritative dataset preparation and audit plus
-leakage-safe splitting. Dataset files and generated outputs are deliberately
-excluded from Git.
+Phases 0 and 1 are implemented: authoritative dataset preparation and audit,
+leakage-safe splitting, and a classical computer-vision baseline. Dataset files
+and generated outputs are deliberately excluded from Git.
 
 ## Quick start
 
@@ -38,3 +38,15 @@ The command downloads the three official AITEX archives, validates every image
 and mask, assigns original images to train/validation/test sets, and then creates
 patch coordinates. It never splits patches independently. See the committed
 [dataset audit](docs/dataset_audit.md) for findings and snapshot checksums.
+
+## Classical baseline
+
+```powershell
+python scripts/run_baseline.py --config configs/baseline.yaml
+```
+
+The validation-tuned local texture baseline reaches a held-out test Dice of
+**0.0129**, IoU of **0.0065**, and image-level F1 of **0.4000**. Its poor
+localisation is an honest lower bound and demonstrates why a learned segmentation
+model is necessary. See the [baseline report](docs/baseline_results.md) for the
+full protocol, metrics, and qualitative output.
