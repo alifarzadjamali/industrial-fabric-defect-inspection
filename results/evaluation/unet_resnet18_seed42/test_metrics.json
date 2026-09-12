@@ -1,0 +1,42 @@
+{
+  "checkpoint_sha256": "983437af6c0a34c364464961765abb2b4daca2da90934045d23ca33080981a77",
+  "evaluation_split": "test",
+  "image_component_threshold": 0.00037479400634765625,
+  "metrics": {
+    "classification": {
+      "accuracy": 0.6578947368421053,
+      "confusion_matrix": [
+        [
+          14,
+          8
+        ],
+        [
+          5,
+          11
+        ]
+      ],
+      "f1": 0.6285714285714286,
+      "false_negatives": 5,
+      "false_positives": 8,
+      "precision": 0.5789473684210527,
+      "recall": 0.6875,
+      "roc_auc": 0.6917613636363635,
+      "true_negatives": 14,
+      "true_positives": 11
+    },
+    "segmentation": {
+      "dice": 0.22246361068868128,
+      "false_negative_pixels": 1075,
+      "false_positive_pixels": 66926,
+      "iou": 0.1251527743827915,
+      "macro_defective_dice": 0.22173034478398654,
+      "pixel_f1": 0.22246361068868128,
+      "pixel_precision": 0.12690792391786468,
+      "pixel_recall": 0.9004906044617236,
+      "true_negative_pixels": 39768159,
+      "true_positive_pixels": 9728
+    }
+  },
+  "segmentation_threshold": 0.1,
+  "threshold_source": "validation"
+}

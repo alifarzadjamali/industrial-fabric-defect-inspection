@@ -104,6 +104,8 @@ def create_patch_manifest(split_frame: pd.DataFrame, patch_size: int = 256) -> p
                         "image_path": source.image_path,
                         "mask_paths": source.mask_paths,
                         "source_is_defective": source.is_defective,
+                        "defect_name": source.defect_name,
+                        "fabric_code": source.fabric_code,
                         "has_segmentation_target": has_segmentation_target,
                         "mask_pixels": mask_pixels,
                         "is_positive": mask_pixels > 0,

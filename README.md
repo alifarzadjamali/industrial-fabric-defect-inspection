@@ -13,9 +13,10 @@ the original client.
 
 ## Status
 
-Phases 0 and 1 are implemented: authoritative dataset preparation and audit,
-leakage-safe splitting, and a classical computer-vision baseline. Dataset files
-and generated outputs are deliberately excluded from Git.
+Phases 0–3 are implemented: authoritative dataset preparation and audit,
+leakage-safe splitting, a classical baseline, U-Net training, and held-out
+evaluation. Dataset files and model checkpoints are deliberately excluded from
+Git.
 
 ## Quick start
 
@@ -63,4 +64,19 @@ Phase 2 uses a U-Net with an ImageNet-pretrained ResNet-18 encoder, balanced
 positive-patch sampling, realistic paired augmentation, combined weighted BCE
 and Dice loss, CUDA mixed precision, checkpointing, learning-rate reduction, and
 early stopping. The fixed-seed run selected epoch 4 at validation Dice
-**0.5738**. The held-out test set remains untouched until Phase 3.
+**0.5738**. The U-Net did not access the held-out split during training or
+checkpoint selection.
+
+## Held-out evaluation
+
+```powershell
+python scripts/evaluate.py --config configs/evaluation.yaml --select-thresholds
+python scripts/evaluate.py --config configs/evaluation.yaml --evaluate-test
+```
+
+Validation-only selection froze a probability threshold of `0.10` before the
+test run. On the held-out split, U-Net reaches Dice **0.2225**, IoU **0.1252**,
+pixel recall **0.9005**, and image-level F1 **0.6286**. This is a clear gain over
+the baseline, though precision and tiny-defect performance remain limited. See
+the [evaluation report](docs/evaluation_results.md) for the full results and
+interpretation.
