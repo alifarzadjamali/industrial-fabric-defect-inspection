@@ -395,13 +395,14 @@ def evaluate_frozen_test(config: dict[str, object]) -> dict[str, object]:
         "checkpoint_sha256": frozen["checkpoint_sha256"],
         "metrics": metrics,
     }
-    per_image.to_csv(output_dir / "test_per_image.csv", index=False)
-    categories.to_csv(output_dir / "test_by_category.csv", index=False)
-    (output_dir / "test_metrics.json").write_text(
+    per_image.to_csv(output_dir / f"{evaluation_split}_per_image.csv", index=False)
+    categories.to_csv(output_dir / f"{evaluation_split}_by_category.csv", index=False)
+    (output_dir / f"{evaluation_split}_metrics.json").write_text(
         json.dumps(result, indent=2, sort_keys=True), encoding="utf-8"
     )
     _plot_confusion_matrix(
-        metrics["classification"]["confusion_matrix"], output_dir / "test_confusion_matrix.png"
+        metrics["classification"]["confusion_matrix"],
+        output_dir / f"{evaluation_split}_confusion_matrix.png",
     )
     return result
 
