@@ -21,6 +21,9 @@ dependencies = [
   "PyYAML==6.0.2",
   "scikit-learn==1.7.2",
   "scipy==1.16.1",
+  "torch==2.14.0",
+  "torchvision==0.29.0",
+  "tqdm==4.67.1",
 ]
 
 [project.optional-dependencies]
@@ -43,4 +46,3 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
-

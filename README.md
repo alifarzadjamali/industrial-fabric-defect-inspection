@@ -23,6 +23,8 @@ and generated outputs are deliberately excluded from Git.
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
+python -m pip install torch==2.14.0+cu130 torchvision==0.29.0+cu130 `
+  --index-url https://download.pytorch.org/whl/cu130
 python -m pip install -e ".[dev]"
 ```
 
@@ -50,3 +52,15 @@ The validation-tuned local texture baseline reaches a held-out test Dice of
 localisation is an honest lower bound and demonstrates why a learned segmentation
 model is necessary. See the [baseline report](docs/baseline_results.md) for the
 full protocol, metrics, and qualitative output.
+
+## U-Net training
+
+```powershell
+python scripts/train.py --config configs/unet.yaml
+```
+
+Phase 2 uses a U-Net with an ImageNet-pretrained ResNet-18 encoder, balanced
+positive-patch sampling, realistic paired augmentation, combined weighted BCE
+and Dice loss, CUDA mixed precision, checkpointing, learning-rate reduction, and
+early stopping. The fixed-seed run selected epoch 4 at validation Dice
+**0.5738**. The held-out test set remains untouched until Phase 3.

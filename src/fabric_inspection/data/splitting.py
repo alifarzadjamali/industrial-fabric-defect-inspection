@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
+from PIL import Image
 from sklearn.model_selection import train_test_split
 
 from fabric_inspection.data.aitex import AitexRecord
@@ -73,16 +75,23 @@ def create_split_manifest(
 def create_patch_manifest(split_frame: pd.DataFrame, patch_size: int = 256) -> pd.DataFrame:
     """Create patch coordinates after source-level splits, without duplicating pixels."""
 
-    from PIL import Image
-
     rows: list[dict[str, object]] = []
     for source in split_frame.itertuples(index=False):
         with Image.open(source.image_path) as image:
             width, height = image.size
+        mask_paths = [
+            Path(item) for item in str(source.mask_paths).split("|") if item and item != "nan"
+        ]
+        union_mask = np.zeros((height, width), dtype=bool)
+        for mask_path in mask_paths:
+            with Image.open(mask_path) as mask_image:
+                union_mask |= np.asarray(mask_image.convert("L")) > 0
+        has_segmentation_target = not source.is_defective or bool(mask_paths)
         for y in range(0, height, patch_size):
             for x in range(0, width, patch_size):
                 patch_width = min(patch_size, width - x)
                 patch_height = min(patch_size, height - y)
+                mask_pixels = int(union_mask[y : y + patch_height, x : x + patch_width].sum())
                 rows.append(
                     {
                         "patch_id": f"{source.image_id}_x{x:04d}_y{y:04d}",
@@ -92,6 +101,12 @@ def create_patch_manifest(split_frame: pd.DataFrame, patch_size: int = 256) -> p
                         "y": y,
                         "width": patch_width,
                         "height": patch_height,
+                        "image_path": source.image_path,
+                        "mask_paths": source.mask_paths,
+                        "source_is_defective": source.is_defective,
+                        "has_segmentation_target": has_segmentation_target,
+                        "mask_pixels": mask_pixels,
+                        "is_positive": mask_pixels > 0,
                     }
                 )
     patches = pd.DataFrame(rows)
