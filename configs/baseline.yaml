@@ -1,0 +1,13 @@
+seed: 42
+data:
+  raw_dir: data/raw
+  split_manifest: data/processed/splits.csv
+baseline:
+  gaussian_sigma: 9.0
+  local_sigma: 2.0
+  morphology_kernel: 5
+  min_component_area: 24
+  threshold_candidates: [2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0]
+  image_area_threshold: 0.0002
+output_dir: results/baseline
+

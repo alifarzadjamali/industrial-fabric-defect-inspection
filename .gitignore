@@ -1,0 +1,23 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.pytest-tmp/
+.ruff_cache/
+.coverage
+.idea/
+.vscode/
+
+# Public data and generated artifacts are reproducible but not versioned.
+data/raw/
+data/interim/
+data/processed/
+results/audit/
+results/baseline/
+checkpoints/
+*.pt
+*.pth
+
+# Local build brief; the public methodology is documented under docs/.
+Industrial Fabric Defect Detection and Segmentation_ Project Specification.md

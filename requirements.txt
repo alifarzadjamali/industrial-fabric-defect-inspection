@@ -1,0 +1,13 @@
+# Runtime dependencies. Install the project and development tools with:
+# python -m pip install -e ".[dev]"
+imagehash==4.3.2
+matplotlib==3.10.6
+numpy==2.2.6
+opencv-python-headless==4.12.0.88
+pandas==2.3.2
+Pillow==11.3.0
+py7zr==1.0.0
+PyYAML==6.0.2
+scikit-learn==1.7.2
+scipy==1.16.1
+
