@@ -19,6 +19,13 @@ def test_segmentation_metrics_have_expected_values() -> None:
     assert metrics["pixel_recall"] == 0.5
 
 
+def test_empty_segmentation_masks_are_a_perfect_match() -> None:
+    empty = np.zeros((2, 2), dtype=bool)
+    metrics = segmentation_metrics_from_counts(*segmentation_counts(empty, empty))
+    assert metrics["dice"] == 1.0
+    assert metrics["iou"] == 1.0
+
+
 def test_classification_metrics_prioritise_recall_visibility() -> None:
     metrics = classification_metrics(
         targets=[False, False, True, True],
