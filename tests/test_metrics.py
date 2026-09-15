@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from fabric_inspection.evaluation.metrics import (
     classification_metrics,
@@ -36,3 +37,8 @@ def test_classification_metrics_prioritise_recall_visibility() -> None:
     assert metrics["accuracy"] == 0.5
     assert metrics["recall"] == 0.5
     assert metrics["roc_auc"] == 0.75
+
+
+def test_classification_metrics_reject_mismatched_score_count() -> None:
+    with pytest.raises(ValueError, match="targets and scores"):
+        classification_metrics([False, True], [False, True], scores=[0.1])

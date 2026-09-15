@@ -50,6 +50,9 @@ def classification_metrics(
     prediction = np.asarray(list(predictions), dtype=bool)
     if target.shape != prediction.shape:
         raise ValueError("Classification targets and predictions must have equal length")
+    score = None if scores is None else np.asarray(list(scores), dtype=float)
+    if score is not None and target.shape != score.shape:
+        raise ValueError("Classification targets and scores must have equal length")
     tp = int(np.logical_and(prediction, target).sum())
     fp = int(np.logical_and(prediction, ~target).sum())
     fn = int(np.logical_and(~prediction, target).sum())
@@ -58,8 +61,8 @@ def classification_metrics(
     recall = safe_divide(tp, tp + fn)
     f1 = safe_divide(2 * precision * recall, precision + recall)
     auc: float | None = None
-    if scores is not None and len(np.unique(target)) == 2:
-        auc = float(roc_auc_score(target, list(scores)))
+    if score is not None and len(np.unique(target)) == 2:
+        auc = float(roc_auc_score(target, score))
     return {
         "accuracy": safe_divide(tp + tn, len(target)),
         "precision": precision,
