@@ -1,7 +1,10 @@
 from pathlib import Path
 
+import pandas as pd
+import pytest
+
 from fabric_inspection.data.aitex import AitexRecord
-from fabric_inspection.data.splitting import create_split_manifest
+from fabric_inspection.data.splitting import create_patch_manifest, create_split_manifest
 
 
 def _records() -> list[AitexRecord]:
@@ -31,3 +34,8 @@ def test_source_images_are_unique_and_split_is_reproducible() -> None:
     assert first.equals(second)
     assert first["image_id"].is_unique
     assert set(first["split"]) == {"train", "validation", "test"}
+
+
+def test_patch_manifest_rejects_non_positive_patch_size() -> None:
+    with pytest.raises(ValueError, match="Patch size must be positive"):
+        create_patch_manifest(pd.DataFrame(), patch_size=0)

@@ -75,6 +75,8 @@ def create_split_manifest(
 def create_patch_manifest(split_frame: pd.DataFrame, patch_size: int = 256) -> pd.DataFrame:
     """Create patch coordinates after source-level splits, without duplicating pixels."""
 
+    if patch_size <= 0:
+        raise ValueError("Patch size must be positive")
     rows: list[dict[str, object]] = []
     for source in split_frame.itertuples(index=False):
         with Image.open(source.image_path) as image:
