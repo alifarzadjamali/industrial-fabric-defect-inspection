@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 import torch
 from torch import nn
 
@@ -40,3 +41,19 @@ def test_overlapping_scaled_inference_preserves_image_shape() -> None:
     )
     assert probability.shape == image.shape
     assert np.allclose(probability, 0.5, atol=1e-6)
+
+
+@pytest.mark.parametrize(
+    ("argument", "value"),
+    [("image_size", 0), ("tile_size", 0), ("batch_size", 0)],
+)
+def test_tiled_inference_rejects_non_positive_sizes(argument: str, value: int) -> None:
+    image = np.zeros((8, 8), dtype=np.uint8)
+    with pytest.raises(ValueError, match="must be positive"):
+        predict_grayscale_image(
+            ZeroLogitModel(),
+            image,
+            torch.device("cpu"),
+            mixed_precision=False,
+            **{argument: value},
+        )

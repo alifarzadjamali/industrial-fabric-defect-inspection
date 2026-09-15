@@ -39,8 +39,14 @@ def predict_grayscale_image(
 
     if image.ndim != 2:
         raise ValueError("Expected a two-dimensional grayscale image")
+    if image_size <= 0:
+        raise ValueError("Image size must be positive")
+    if batch_size <= 0:
+        raise ValueError("Batch size must be positive")
     height, width = image.shape
-    tile_size = tile_size or image_size
+    tile_size = image_size if tile_size is None else tile_size
+    if tile_size <= 0:
+        raise ValueError("Tile size must be positive")
     if overlap < 0 or overlap >= tile_size:
         raise ValueError("Overlap must be non-negative and smaller than tile size")
     stride = tile_size - overlap
