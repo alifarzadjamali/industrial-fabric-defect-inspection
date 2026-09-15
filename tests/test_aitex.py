@@ -1,9 +1,15 @@
 from pathlib import Path
 
 import numpy as np
+import pytest
 from PIL import Image
 
-from fabric_inspection.data.aitex import discover_records, load_union_mask
+from fabric_inspection.data.aitex import discover_records, load_union_mask, sha256_file
+
+
+def test_sha256_rejects_non_positive_chunk_size() -> None:
+    with pytest.raises(ValueError, match="Chunk size must be positive"):
+        sha256_file(Path("unused"), chunk_size=0)
 
 
 def test_discovery_associates_and_unions_multiple_masks(tmp_path: Path) -> None:
