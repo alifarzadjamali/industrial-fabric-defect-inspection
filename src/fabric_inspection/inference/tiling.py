@@ -35,7 +35,7 @@ def predict_grayscale_image(
     tile_size: int | None = None,
     overlap: int = 0,
 ) -> np.ndarray:
-    """Predict with training-scale tiles and overlap-weighted reconstruction."""
+    """Predict a full grayscale image with tiles, blending overlapping predictions."""
 
     if image.ndim != 2:
         raise ValueError("Expected a two-dimensional grayscale image")
