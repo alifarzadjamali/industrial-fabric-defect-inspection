@@ -107,6 +107,8 @@ install this project. All remaining dependencies stay inside `.venv`.
 
 ## Reproduce the experiments
 
+Run these commands from the repository root after preparing the environment.
+
 Download and prepare the official AITEX data:
 
 ```powershell
