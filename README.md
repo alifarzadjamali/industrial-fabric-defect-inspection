@@ -1,9 +1,8 @@
 # Industrial Fabric Defect Inspection
 
-This project finds defects in woven fabric and marks the affected pixels. Give it a grayscale
-inspection image and the model returns a probability map showing where it believes a defect is
-present. That makes it useful for two related tasks: warning that a roll may be defective and
-showing an operator where to look.
+This project finds defects in woven fabric and marks the affected pixels. Pass in a grayscale
+inspection image and the model returns a probability map for the suspected defect area. It can
+flag a potentially defective roll and show an operator where to look.
 
 I built the project around the public AITEX Fabric Image Database as a practical study of a much
 larger problem: how far can a small, reproducible vision system get toward automated textile
