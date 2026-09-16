@@ -25,7 +25,7 @@ def create_split_manifest(
     train_fraction: float = 0.70,
     validation_fraction: float = 0.15,
 ) -> pd.DataFrame:
-    """Assign each source image once; patches must inherit this assignment."""
+    """Assign each source image to one split so its patches stay together."""
 
     if not 0 < train_fraction < 1 or not 0 < validation_fraction < 1:
         raise ValueError("Split fractions must be between zero and one")
@@ -73,7 +73,7 @@ def create_split_manifest(
 
 
 def create_patch_manifest(split_frame: pd.DataFrame, patch_size: int = 256) -> pd.DataFrame:
-    """Create patch coordinates after source-level splits, without duplicating pixels."""
+    """Create patch coordinates after splitting, keeping every patch in its source split."""
 
     if patch_size <= 0:
         raise ValueError("Patch size must be positive")
