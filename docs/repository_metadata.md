@@ -2,11 +2,11 @@
 
 ## Suggested GitHub repository metadata
 
-**Description**
+Description
 
 > Industrial fabric defect detection and segmentation using PyTorch, U-Net and leakage-safe evaluation on the AITEX dataset.
 
-**Topics**
+Topics
 
 ```text
 computer-vision
@@ -21,5 +21,5 @@ unet
 quality-inspection
 ```
 
-These values are recorded here so they can be copied into GitHub's repository settings if the
-GitHub CLI or authenticated metadata access is unavailable.
+Copy these values into the repository settings when GitHub CLI or authenticated metadata access
+is unavailable.
