@@ -105,6 +105,12 @@ python -m pip install -e ".[dev]"
 If your GPU needs a different PyTorch build, install the matching official build first and then
 install this project. All remaining dependencies stay inside `.venv`.
 
+### Troubleshooting setup
+
+- If PowerShell blocks activation, run `Set-ExecutionPolicy -Scope Process Bypass` in the current terminal and activate the environment again.
+- If CUDA is unavailable, use the CPU-compatible PyTorch build for evaluation; training is expected to be much slower.
+- If a command cannot find `fabric_inspection`, run it from the repository root after `python -m pip install -e "."`.
+
 ## Reproduce the experiments
 
 Run these commands from the repository root after preparing the environment.
