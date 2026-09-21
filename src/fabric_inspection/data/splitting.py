@@ -27,6 +27,8 @@ def create_split_manifest(
 ) -> pd.DataFrame:
     """Assign each source image to one split so its patches stay together."""
 
+    if not records:
+        raise ValueError("At least one source image is required to create splits")
     if not 0 < train_fraction < 1 or not 0 < validation_fraction < 1:
         raise ValueError("Split fractions must be between zero and one")
     if train_fraction + validation_fraction >= 1:

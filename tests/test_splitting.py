@@ -39,3 +39,8 @@ def test_source_images_are_unique_and_split_is_reproducible() -> None:
 def test_patch_manifest_rejects_non_positive_patch_size() -> None:
     with pytest.raises(ValueError, match="Patch size must be positive"):
         create_patch_manifest(pd.DataFrame(), patch_size=0)
+
+
+def test_split_manifest_rejects_empty_records() -> None:
+    with pytest.raises(ValueError, match="At least one source image"):
+        create_split_manifest([])
