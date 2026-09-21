@@ -8,6 +8,12 @@ __pycache__/
 .coverage
 .idea/
 .vscode/
+.DS_Store
+Thumbs.db
+*.log
+.env
+dist/
+build/
 
 # Public data and generated artifacts are reproducible but not versioned.
 data/raw/
