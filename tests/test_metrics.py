@@ -42,3 +42,8 @@ def test_classification_metrics_prioritise_recall_visibility() -> None:
 def test_classification_metrics_reject_mismatched_score_count() -> None:
     with pytest.raises(ValueError, match="targets and scores"):
         classification_metrics([False, True], [False, True], scores=[0.1])
+
+
+def test_classification_metrics_reject_empty_inputs() -> None:
+    with pytest.raises(ValueError, match="at least one sample"):
+        classification_metrics([], [])
