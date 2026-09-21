@@ -207,7 +207,7 @@ def _segmentation_summary(
         if image.target_defective:
             defective_dice.append(float(segmentation_metrics_from_counts(*counts)["dice"]))
     metrics = segmentation_metrics_from_counts(*totals.tolist())
-    metrics["macro_defective_dice"] = float(np.mean(defective_dice))
+    metrics["macro_defective_dice"] = float(np.mean(defective_dice)) if defective_dice else 0.0
     return metrics
 
 

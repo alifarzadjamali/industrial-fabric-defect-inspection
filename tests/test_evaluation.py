@@ -2,6 +2,7 @@ import numpy as np
 
 from fabric_inspection.evaluation.model_evaluator import (
     ImagePrediction,
+    _segmentation_summary,
     largest_component_fraction,
     select_segmentation_threshold,
 )
@@ -21,3 +22,8 @@ def test_largest_component_ignores_disconnected_total_area() -> None:
     mask[1:3, 1:3] = True
     mask[6:9, 6:9] = True
     assert largest_component_fraction(mask) == 0.09
+
+
+def test_empty_evaluation_has_defined_macro_defective_dice() -> None:
+    summary = _segmentation_summary([], threshold=0.5)
+    assert summary["macro_defective_dice"] == 0.0
