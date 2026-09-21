@@ -10,13 +10,19 @@ from torch import nn
 from fabric_inspection.data.dataset import IMAGENET_MEAN, IMAGENET_STD
 
 
+def _pad_patch(patch: np.ndarray, size: int) -> np.ndarray:
+    vertical = size - patch.shape[0]
+    horizontal = size - patch.shape[1]
+    if vertical < 0 or horizontal < 0:
+        raise ValueError(f"Patch {patch.shape} exceeds tile size {size}")
+    if not vertical and not horizontal:
+        return patch.copy()
+    mode = "reflect" if min(patch.shape) > 1 else "edge"
+    return np.pad(patch, ((0, vertical), (0, horizontal)), mode=mode)
+
+
 def _normalise_patch(patch: np.ndarray, source_size: int, image_size: int) -> torch.Tensor:
-    height, width = patch.shape
-    padded = np.pad(
-        patch,
-        ((0, source_size - height), (0, source_size - width)),
-        mode="reflect",
-    )
+    padded = _pad_patch(patch, source_size)
     if source_size != image_size:
         padded = resize(padded, (image_size, image_size), interpolation=INTER_LINEAR)
     scaled = padded.astype(np.float32) / 255.0
