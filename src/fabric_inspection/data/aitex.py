@@ -73,7 +73,7 @@ def download_and_extract(raw_dir: Path, force: bool = False) -> dict[str, str]:
             request = urllib.request.Request(
                 url,
                 headers={
-                    "User-Agent": "fabric-inspection-research/0.1 (+https://github.com/farzadismyid/industrial-fabric-defect-inspection)"
+                    "User-Agent": "fabric-inspection-research/0.1 (+https://github.com/alifarzadjamali/industrial-fabric-defect-inspection)"
                 },
             )
             with (

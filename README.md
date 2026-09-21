@@ -6,8 +6,8 @@ flag a potentially defective roll and show an operator where to look.
 
 I built the project around the public AITEX Fabric Image Database as a practical study of a much
 larger problem: how far can a small, reproducible vision system get toward automated textile
-inspection? The answer is encouraging, but honest. The latest model is a good research prototype;
-it is not yet a replacement for a production quality-control system.
+inspection? The results are promising, but the system remains a research prototype. It is not
+ready to replace a production quality-control system.
 
 ## Example inspection results
 
@@ -171,9 +171,9 @@ Not yet. On the clean final holdout, the model still misses 5 of 16 defective im
 5 false alarms among 22 normal images. AITEX is also too small and controlled to represent new
 looms, cameras, lighting, fabric lots, line speeds, and defect policies.
 
-The next serious step is to collect images from the intended production setup, keep fabric lots
-separate during evaluation, label more microscopic defects, measure throughput, and choose an
-operating threshold from the real cost of a missed defect versus a false stop. In its current
+Next, collect images from the intended production setup, keep fabric lots separate during
+evaluation, label more small defects, measure throughput, and choose an operating threshold based
+on the real cost of missed defects and false stops. In its current
 form, the system is best viewed as a strong research or portfolio project and a promising
 human-in-the-loop inspection aid.
 
@@ -186,7 +186,6 @@ human-in-the-loop inspection aid.
 - [Error and robustness analysis](docs/error_robustness_analysis.md)
 - [Enhanced validation results](docs/enhanced_validation_results.md)
 - [Enhanced final results](docs/enhanced_final_results.md)
-- [Suggested GitHub metadata](docs/repository_metadata.md)
 
 This is independent work inspired by a real-world textile-inspection brief. It was not
 commissioned by, or produced for, the original client.
