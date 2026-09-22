@@ -187,5 +187,9 @@ human-in-the-loop inspection aid.
 - [Enhanced validation results](docs/enhanced_validation_results.md)
 - [Enhanced final results](docs/enhanced_final_results.md)
 
+For the recommended reading order, start with the dataset audit, then review
+the evaluation protocol and final results. The [contributor guide](CONTRIBUTING.md)
+covers the checks and repository boundaries for follow-up maintenance.
+
 This is independent work inspired by a real-world textile-inspection brief. It was not
 commissioned by, or produced for, the original client.
