@@ -22,6 +22,12 @@ def anomaly_score(
 
     if grayscale.ndim != 2:
         raise ValueError("The baseline expects a two-dimensional grayscale image")
+    if grayscale.size == 0:
+        raise ValueError("The baseline requires at least one pixel")
+    if not np.isfinite(gaussian_sigma) or gaussian_sigma <= 0:
+        raise ValueError("Gaussian sigma must be finite and positive")
+    if not np.isfinite(local_sigma) or local_sigma <= 0:
+        raise ValueError("Local sigma must be finite and positive")
     image = grayscale.astype(np.float32) / 255.0
     broad = cv2.GaussianBlur(image, (0, 0), gaussian_sigma, borderType=cv2.BORDER_REFLECT)
     local = cv2.GaussianBlur(image, (0, 0), local_sigma, borderType=cv2.BORDER_REFLECT)
@@ -56,6 +62,12 @@ def postprocess_mask(
 ) -> np.ndarray:
     """Threshold, close small gaps, and remove isolated responses."""
 
+    if not np.isfinite(threshold):
+        raise ValueError("Threshold must be finite")
+    if morphology_kernel < 1:
+        raise ValueError("Morphology kernel must be positive")
+    if min_component_area < 1:
+        raise ValueError("Minimum component area must be positive")
     mask = (score >= threshold).astype(np.uint8)
     if morphology_kernel > 1:
         kernel = cv2.getStructuringElement(
