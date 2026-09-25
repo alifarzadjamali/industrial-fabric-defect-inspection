@@ -44,6 +44,12 @@ def test_classification_metrics_reject_mismatched_score_count() -> None:
         classification_metrics([False, True], [False, True], scores=[0.1])
 
 
+@pytest.mark.parametrize("score", [float("nan"), float("inf")])
+def test_classification_metrics_reject_non_finite_scores(score: float) -> None:
+    with pytest.raises(ValueError, match="scores must be finite"):
+        classification_metrics([False, True], [False, True], scores=[0.1, score])
+
+
 def test_classification_metrics_reject_empty_inputs() -> None:
     with pytest.raises(ValueError, match="at least one sample"):
         classification_metrics([], [])

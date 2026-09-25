@@ -55,6 +55,8 @@ def classification_metrics(
     score = None if scores is None else np.asarray(list(scores), dtype=float)
     if score is not None and target.shape != score.shape:
         raise ValueError("Classification targets and scores must have equal length")
+    if score is not None and not np.isfinite(score).all():
+        raise ValueError("Classification scores must be finite")
     tp = int(np.logical_and(prediction, target).sum())
     fp = int(np.logical_and(prediction, ~target).sum())
     fn = int(np.logical_and(~prediction, target).sum())
