@@ -1,10 +1,12 @@
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 from PIL import Image
 
 from fabric_inspection.data.aitex import discover_records, load_union_mask, sha256_file
+from fabric_inspection.data.dataset import AitexPatchDataset
 
 
 def test_sha256_rejects_non_positive_chunk_size() -> None:
@@ -31,3 +33,19 @@ def test_discovery_associates_and_unions_multiple_masks(tmp_path: Path) -> None:
     assert records[0].defect_name == "broken_end"
     assert len(records[0].mask_paths) == 2
     assert int(load_union_mask(records[0]).sum()) == 8
+
+
+@pytest.mark.parametrize(
+    ("argument", "value", "message"),
+    [
+        ("image_size", 0, "Image size must be positive"),
+        ("source_size", 0, "Source size must be positive"),
+        ("augmentation_profile", "unknown", "Unknown augmentation profile"),
+    ],
+)
+def test_patch_dataset_validates_configuration_before_loading(
+    argument: str, value: object, message: str
+) -> None:
+    manifest = pd.DataFrame(columns=["split", "has_segmentation_target"])
+    with pytest.raises(ValueError, match=message):
+        AitexPatchDataset(manifest, "train", **{argument: value})

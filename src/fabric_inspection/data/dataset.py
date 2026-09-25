@@ -92,6 +92,12 @@ class AitexPatchDataset(Dataset[tuple[torch.Tensor, torch.Tensor]]):
         source_size: int | None = None,
         augmentation_profile: str = "standard",
     ) -> None:
+        if image_size <= 0:
+            raise ValueError("Image size must be positive")
+        if source_size is not None and source_size <= 0:
+            raise ValueError("Source size must be positive")
+        if augmentation_profile not in {"standard", "robust"}:
+            raise ValueError(f"Unknown augmentation profile: {augmentation_profile}")
         selected = manifest[
             (manifest["split"] == split) & manifest["has_segmentation_target"].astype(bool)
         ]
