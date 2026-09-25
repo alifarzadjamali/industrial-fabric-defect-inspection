@@ -45,6 +45,8 @@ def predict_grayscale_image(
 
     if image.ndim != 2:
         raise ValueError("Expected a two-dimensional grayscale image")
+    if image.size == 0:
+        raise ValueError("Image must contain at least one pixel")
     if image_size <= 0:
         raise ValueError("Image size must be positive")
     if batch_size <= 0:

@@ -36,6 +36,16 @@ def test_tiled_inference_handles_single_pixel_images() -> None:
     assert np.allclose(probability, 0.5)
 
 
+def test_tiled_inference_rejects_empty_images() -> None:
+    with pytest.raises(ValueError, match="at least one pixel"):
+        predict_grayscale_image(
+            ZeroLogitModel(),
+            np.empty((0, 8), dtype=np.uint8),
+            torch.device("cpu"),
+            mixed_precision=False,
+        )
+
+
 def test_overlapping_scaled_inference_preserves_image_shape() -> None:
     image = np.full((51, 73), 127, dtype=np.uint8)
     probability = predict_grayscale_image(
