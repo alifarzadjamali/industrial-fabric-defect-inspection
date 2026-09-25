@@ -1,7 +1,8 @@
+import pytest
 import torch
 
 from fabric_inspection.models.unet import ResNet18UNet
-from fabric_inspection.training.losses import BCEDiceLoss
+from fabric_inspection.training.losses import BCEDiceLoss, DiceLoss, FocalDiceLoss
 
 
 def test_unet_output_and_combined_loss_backward() -> None:
@@ -14,3 +15,14 @@ def test_unet_output_and_combined_loss_backward() -> None:
     loss.backward()
     assert logits.shape == targets.shape
     assert torch.isfinite(loss)
+
+
+@pytest.mark.parametrize("loss", [DiceLoss, BCEDiceLoss, FocalDiceLoss])
+def test_losses_reject_invalid_configuration(loss: type[torch.nn.Module]) -> None:
+    with pytest.raises(ValueError):
+        if loss is DiceLoss:
+            loss(smooth=0)
+        elif loss is BCEDiceLoss:
+            loss(bce_weight=-1)
+        else:
+            loss(alpha=2)

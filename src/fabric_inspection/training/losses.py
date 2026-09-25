@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -10,6 +12,8 @@ from torch.nn import functional as F
 class DiceLoss(nn.Module):
     def __init__(self, smooth: float = 1.0) -> None:
         super().__init__()
+        if not math.isfinite(smooth) or smooth <= 0:
+            raise ValueError("Dice smoothing must be finite and positive")
         self.smooth = smooth
 
     def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
@@ -29,8 +33,12 @@ class BCEDiceLoss(nn.Module):
         positive_pixel_weight: float = 25.0,
     ) -> None:
         super().__init__()
+        if not all(math.isfinite(value) and value >= 0 for value in (bce_weight, dice_weight)):
+            raise ValueError("Loss weights must be finite and non-negative")
         if bce_weight + dice_weight <= 0:
             raise ValueError("At least one loss weight must be positive")
+        if not math.isfinite(positive_pixel_weight) or positive_pixel_weight <= 0:
+            raise ValueError("Positive pixel weight must be finite and positive")
         self.bce_weight = bce_weight
         self.dice_weight = dice_weight
         self.register_buffer("positive_pixel_weight", torch.tensor(positive_pixel_weight))
@@ -54,6 +62,14 @@ class FocalDiceLoss(nn.Module):
         gamma: float = 2.0,
     ) -> None:
         super().__init__()
+        if not all(math.isfinite(value) and value >= 0 for value in (focal_weight, dice_weight)):
+            raise ValueError("Loss weights must be finite and non-negative")
+        if focal_weight + dice_weight <= 0:
+            raise ValueError("At least one loss weight must be positive")
+        if not math.isfinite(alpha) or not 0 <= alpha <= 1:
+            raise ValueError("Focal alpha must be between zero and one")
+        if not math.isfinite(gamma) or gamma < 0:
+            raise ValueError("Focal gamma must be finite and non-negative")
         self.focal_weight = focal_weight
         self.dice_weight = dice_weight
         self.alpha = alpha
