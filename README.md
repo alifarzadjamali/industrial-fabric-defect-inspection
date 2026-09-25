@@ -105,6 +105,16 @@ python -m pip install -e ".[dev]"
 If your GPU needs a different PyTorch build, install the matching official build first and then
 install this project. All remaining dependencies stay inside `.venv`.
 
+On Linux or macOS, the equivalent environment setup is:
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+# Install the PyTorch build appropriate for your platform, then:
+python -m pip install -e ".[dev]"
+```
+
 ### Troubleshooting setup
 
 - If PowerShell blocks activation, run `Set-ExecutionPolicy -Scope Process Bypass` in the current terminal and activate the environment again.
