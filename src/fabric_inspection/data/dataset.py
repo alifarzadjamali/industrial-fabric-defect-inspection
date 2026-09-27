@@ -141,7 +141,7 @@ class AitexPatchDataset(Dataset[tuple[torch.Tensor, torch.Tensor]]):
             image = image.astype(np.float32) / 255.0
         channels = np.repeat(image[None, :, :], 3, axis=0)
         channels = (channels - IMAGENET_MEAN) / IMAGENET_STD
-        image_tensor = torch.from_numpy(np.ascontiguousarray(channels)).float()
+        image_tensor = torch.from_numpy(np.ascontiguousarray(channels))
         mask_tensor = torch.from_numpy(np.ascontiguousarray(mask[None, :, :])).float()
         return image_tensor, mask_tensor
 
