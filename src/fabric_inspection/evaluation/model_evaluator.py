@@ -274,8 +274,10 @@ def evaluate_images(
                 **metrics,
             }
         )
-        category_counts.setdefault(image.defect_name, np.zeros(4, dtype=np.int64))
-        category_counts[image.defect_name] += counts
+        counts_for_category = category_counts.get(image.defect_name)
+        if counts_for_category is None:
+            counts_for_category = category_counts[image.defect_name] = np.zeros(4, dtype=np.int64)
+        counts_for_category += counts
     per_image = pd.DataFrame(rows)
     segmentation = _segmentation_summary(images, segmentation_threshold)
     classification = classification_metrics(
