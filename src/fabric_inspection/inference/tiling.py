@@ -28,7 +28,9 @@ def _normalise_patch(patch: np.ndarray, source_size: int, image_size: int) -> to
     scaled = padded.astype(np.float32) / 255.0
     channels = np.repeat(scaled[None, :, :], 3, axis=0)
     channels = (channels - IMAGENET_MEAN) / IMAGENET_STD
-    return torch.from_numpy(np.ascontiguousarray(channels)).float()
+    # ``scaled`` is float32, so the normalized channels already have PyTorch's
+    # default floating-point dtype.  Avoid an otherwise redundant tensor copy.
+    return torch.from_numpy(np.ascontiguousarray(channels))
 
 
 def predict_grayscale_image(
