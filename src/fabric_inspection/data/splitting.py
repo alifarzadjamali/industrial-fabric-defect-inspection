@@ -86,16 +86,22 @@ def create_patch_manifest(split_frame: pd.DataFrame, patch_size: int = 256) -> p
         mask_paths = [
             Path(item) for item in str(source.mask_paths).split("|") if item and item != "nan"
         ]
-        union_mask = np.zeros((height, width), dtype=bool)
-        for mask_path in mask_paths:
-            with Image.open(mask_path) as mask_image:
-                union_mask |= np.asarray(mask_image.convert("L")) > 0
+        union_mask: np.ndarray | None = None
+        if mask_paths:
+            union_mask = np.zeros((height, width), dtype=bool)
+            for mask_path in mask_paths:
+                with Image.open(mask_path) as mask_image:
+                    union_mask |= np.asarray(mask_image.convert("L")) > 0
         has_segmentation_target = not source.is_defective or bool(mask_paths)
         for y in range(0, height, patch_size):
             for x in range(0, width, patch_size):
                 patch_width = min(patch_size, width - x)
                 patch_height = min(patch_size, height - y)
-                mask_pixels = int(union_mask[y : y + patch_height, x : x + patch_width].sum())
+                mask_pixels = (
+                    int(union_mask[y : y + patch_height, x : x + patch_width].sum())
+                    if union_mask is not None
+                    else 0
+                )
                 rows.append(
                     {
                         "patch_id": f"{source.image_id}_x{x:04d}_y{y:04d}",
