@@ -20,7 +20,9 @@ def segmentation_counts(prediction: np.ndarray, target: np.ndarray) -> tuple[int
     true_positive = int(np.logical_and(prediction, target).sum())
     false_positive = int(np.logical_and(prediction, ~target).sum())
     false_negative = int(np.logical_and(~prediction, target).sum())
-    true_negative = int(np.logical_and(~prediction, ~target).sum())
+    # The remaining pixels are true negatives; deriving this avoids one more
+    # full-size boolean temporary for every segmentation map.
+    true_negative = prediction.size - true_positive - false_positive - false_negative
     return true_positive, false_positive, false_negative, true_negative
 
 
