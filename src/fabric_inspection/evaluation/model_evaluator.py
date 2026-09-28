@@ -259,10 +259,15 @@ def evaluate_images(
 ) -> tuple[dict[str, object], pd.DataFrame, pd.DataFrame]:
     rows: list[dict[str, object]] = []
     category_counts: dict[str, np.ndarray] = {}
+    totals = np.zeros(4, dtype=np.int64)
+    defective_dice: list[float] = []
     for image in images:
         prediction = image.probability >= segmentation_threshold
         counts = segmentation_counts(prediction, image.target)
         metrics = segmentation_metrics_from_counts(*counts)
+        totals += counts
+        if image.target_defective:
+            defective_dice.append(float(metrics["dice"]))
         score = largest_component_fraction(prediction)
         rows.append(
             {
@@ -279,7 +284,10 @@ def evaluate_images(
             counts_for_category = category_counts[image.defect_name] = np.zeros(4, dtype=np.int64)
         counts_for_category += counts
     per_image = pd.DataFrame(rows)
-    segmentation = _segmentation_summary(images, segmentation_threshold)
+    segmentation = segmentation_metrics_from_counts(*totals.tolist())
+    segmentation["macro_defective_dice"] = (
+        float(np.mean(defective_dice)) if defective_dice else 0.0
+    )
     classification = classification_metrics(
         per_image["target_defective"],
         per_image["predicted_defective"],
