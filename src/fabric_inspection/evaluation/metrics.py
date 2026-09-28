@@ -67,7 +67,7 @@ def classification_metrics(
     recall = safe_divide(tp, tp + fn)
     f1 = safe_divide(2 * precision * recall, precision + recall)
     auc: float | None = None
-    if score is not None and len(np.unique(target)) == 2:
+    if score is not None and target.any() and not target.all():
         auc = float(roc_auc_score(target, score))
     return {
         "accuracy": safe_divide(tp + tn, len(target)),
