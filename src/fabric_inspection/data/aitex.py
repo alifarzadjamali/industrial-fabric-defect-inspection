@@ -101,7 +101,7 @@ def discover_records(raw_dir: Path) -> list[AitexRecord]:
         mask_match = _MASK_RE.match(path.stem)
         if mask_match:
             mask_map.setdefault(mask_match.group("source").lower(), []).append(path)
-        elif "archive" not in {part.lower() for part in path.parts}:
+        elif not any(part.lower() == "archive" for part in path.parts):
             images.append(path)
 
     records: list[AitexRecord] = []
