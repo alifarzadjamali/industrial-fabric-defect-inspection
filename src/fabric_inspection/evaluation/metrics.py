@@ -62,7 +62,7 @@ def classification_metrics(
     tp = int(np.logical_and(prediction, target).sum())
     fp = int(np.logical_and(prediction, ~target).sum())
     fn = int(np.logical_and(~prediction, target).sum())
-    tn = int(np.logical_and(~prediction, ~target).sum())
+    tn = target.size - tp - fp - fn
     precision = safe_divide(tp, tp + fp)
     recall = safe_divide(tp, tp + fn)
     f1 = safe_divide(2 * precision * recall, precision + recall)
