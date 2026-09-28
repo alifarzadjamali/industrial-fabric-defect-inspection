@@ -66,7 +66,8 @@ def audit_dataset(records: list[AitexRecord], output_dir: Path) -> dict[str, obj
         except (OSError, UnidentifiedImageError) as error:
             corrupt_files.append(f"{record.image_path}: {error}")
             continue
-        hashes[sha256_file(record.image_path)].append(record.image_id)
+        image_sha256 = sha256_file(record.image_path)
+        hashes[image_sha256].append(record.image_id)
         defective_pixels = 0
         component_areas: list[int] = []
         try:
@@ -90,7 +91,7 @@ def audit_dataset(records: list[AitexRecord], output_dir: Path) -> dict[str, obj
                 "defect_components": len(component_areas),
                 "smallest_component_pixels": min(component_areas, default=0),
                 "largest_component_pixels": max(component_areas, default=0),
-                "sha256": sha256_file(record.image_path),
+                "sha256": image_sha256,
                 "phash": perceptual[record.image_id],
             }
         )
