@@ -78,9 +78,10 @@ def _run_epoch(
         total_loss += float(loss.detach()) * images.shape[0]
         predictions = torch.sigmoid(logits.detach()) >= metric_threshold
         target_mask = targets >= 0.5
-        true_positive += int((predictions & target_mask).sum())
-        false_positive += int((predictions & ~target_mask).sum())
-        false_negative += int((~predictions & target_mask).sum())
+        batch_true_positive = int((predictions & target_mask).sum())
+        true_positive += batch_true_positive
+        false_positive += int(predictions.sum()) - batch_true_positive
+        false_negative += int(target_mask.sum()) - batch_true_positive
         progress.set_postfix(loss=f"{float(loss.detach()):.4f}")
     dice_denominator = 2 * true_positive + false_positive + false_negative
     dice = 2 * true_positive / dice_denominator if dice_denominator else 1.0
