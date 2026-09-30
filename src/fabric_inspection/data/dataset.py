@@ -102,6 +102,17 @@ class AitexPatchDataset(Dataset[tuple[torch.Tensor, torch.Tensor]]):
             (manifest["split"] == split) & manifest["has_segmentation_target"].astype(bool)
         ]
         self.rows = selected.reset_index(drop=True)
+        self._samples = [
+            (
+                int(row.x),
+                int(row.y),
+                int(row.width),
+                int(row.height),
+                str(row.image_path),
+                tuple(_parse_mask_paths(row.mask_paths)),
+            )
+            for row in self.rows.itertuples(index=False)
+        ]
         self.image_size = image_size
         self.source_size = source_size or image_size
         self.augment = augment
@@ -117,12 +128,10 @@ class AitexPatchDataset(Dataset[tuple[torch.Tensor, torch.Tensor]]):
         return self.rows["is_positive"].astype(bool).to_numpy()
 
     def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor]:
-        row = self.rows.iloc[index]
-        x, y = int(row["x"]), int(row["y"])
-        width, height = int(row["width"]), int(row["height"])
-        image = _cached_grayscale(str(row["image_path"]))[y : y + height, x : x + width]
+        x, y, width, height, image_path, mask_paths = self._samples[index]
+        image = _cached_grayscale(image_path)[y : y + height, x : x + width]
         mask = np.zeros((height, width), dtype=bool)
-        for path in _parse_mask_paths(row["mask_paths"]):
+        for path in mask_paths:
             mask |= _cached_grayscale(path)[y : y + height, x : x + width] > 0
         image = _pad_patch(image, self.source_size)
         mask = _pad_patch(mask, self.source_size, is_mask=True)

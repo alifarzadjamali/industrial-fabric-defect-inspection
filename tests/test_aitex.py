@@ -49,3 +49,30 @@ def test_patch_dataset_validates_configuration_before_loading(
     manifest = pd.DataFrame(columns=["split", "has_segmentation_target"])
     with pytest.raises(ValueError, match=message):
         AitexPatchDataset(manifest, "train", **{argument: value})
+
+
+def test_patch_dataset_materialises_patch_metadata_once(tmp_path: Path) -> None:
+    image_path = tmp_path / "image.png"
+    mask_path = tmp_path / "mask.png"
+    Image.fromarray(np.full((4, 4), 127, dtype=np.uint8)).save(image_path)
+    Image.fromarray(np.eye(4, dtype=np.uint8) * 255).save(mask_path)
+    manifest = pd.DataFrame(
+        [
+            {
+                "split": "train",
+                "has_segmentation_target": True,
+                "is_positive": True,
+                "x": 0,
+                "y": 0,
+                "width": 4,
+                "height": 4,
+                "image_path": image_path,
+                "mask_paths": f"{mask_path}|",
+            }
+        ]
+    )
+    dataset = AitexPatchDataset(manifest, "train", image_size=4)
+    dataset.rows.loc[0, "mask_paths"] = "missing.png"
+    image, mask = dataset[0]
+    assert image.shape == (3, 4, 4)
+    assert int(mask.sum()) == 4
