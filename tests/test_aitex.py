@@ -76,3 +76,27 @@ def test_patch_dataset_materialises_patch_metadata_once(tmp_path: Path) -> None:
     image, mask = dataset[0]
     assert image.shape == (3, 4, 4)
     assert int(mask.sum()) == 4
+
+
+def test_patch_dataset_pads_single_pixel_dimensions(tmp_path: Path) -> None:
+    image_path = tmp_path / "narrow.png"
+    Image.fromarray(np.array([[64, 128]], dtype=np.uint8)).save(image_path)
+    manifest = pd.DataFrame(
+        [
+            {
+                "split": "validation",
+                "has_segmentation_target": True,
+                "is_positive": False,
+                "x": 0,
+                "y": 0,
+                "width": 2,
+                "height": 1,
+                "image_path": image_path,
+                "mask_paths": "",
+            }
+        ]
+    )
+    dataset = AitexPatchDataset(manifest, "validation", image_size=4)
+    image, mask = dataset[0]
+    assert image.shape == (3, 4, 4)
+    assert mask.shape == (1, 4, 4)

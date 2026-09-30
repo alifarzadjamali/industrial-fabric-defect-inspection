@@ -35,7 +35,7 @@ def _pad_patch(array: np.ndarray, size: int, is_mask: bool = False) -> np.ndarra
         raise ValueError(f"Patch {array.shape} exceeds configured input size {size}")
     if not vertical and not horizontal:
         return array.copy()
-    mode = "constant" if is_mask else "reflect"
+    mode = "constant" if is_mask else "reflect" if min(array.shape) > 1 else "edge"
     return np.pad(array, ((0, vertical), (0, horizontal)), mode=mode)
 
 
