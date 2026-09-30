@@ -3,7 +3,7 @@ import pytest
 import torch
 from torch import nn
 
-from fabric_inspection.inference.tiling import predict_grayscale_image
+from fabric_inspection.inference.tiling import _blend_window, predict_grayscale_image
 
 
 class ZeroLogitModel(nn.Module):
@@ -84,6 +84,15 @@ def test_tiled_inference_streams_only_one_batch_at_a_time() -> None:
         mixed_precision=False,
     )
     assert model.batch_sizes == [3, 3, 3, 1]
+
+
+def test_blend_windows_are_reused_and_read_only() -> None:
+    _blend_window.cache_clear()
+    first = _blend_window(16, 8)
+    second = _blend_window(16, 8)
+    assert first is second
+    assert not first.flags.writeable
+    assert _blend_window.cache_info().hits == 1
 
 
 @pytest.mark.parametrize(

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
+
 import numpy as np
 import torch
 from cv2 import INTER_LINEAR, resize
@@ -31,6 +33,17 @@ def _normalise_patch(patch: np.ndarray, source_size: int, image_size: int) -> to
     # ``scaled`` is float32, so the normalized channels already have PyTorch's
     # default floating-point dtype.  Avoid an otherwise redundant tensor copy.
     return torch.from_numpy(np.ascontiguousarray(channels))
+
+
+@lru_cache(maxsize=16)
+def _blend_window(tile_size: int, overlap: int) -> np.ndarray:
+    if overlap:
+        axis = np.maximum(np.hanning(tile_size).astype(np.float32), 0.05)
+        window = np.outer(axis, axis)
+    else:
+        window = np.ones((tile_size, tile_size), dtype=np.float32)
+    window.setflags(write=False)
+    return window
 
 
 def predict_grayscale_image(
@@ -70,11 +83,7 @@ def predict_grayscale_image(
 
     probability_sum = np.zeros((height, width), dtype=np.float32)
     weight_sum = np.zeros((height, width), dtype=np.float32)
-    if overlap:
-        axis = np.maximum(np.hanning(tile_size).astype(np.float32), 0.05)
-        window = np.outer(axis, axis)
-    else:
-        window = np.ones((tile_size, tile_size), dtype=np.float32)
+    window = _blend_window(tile_size, overlap)
     model.eval()
     patches: list[torch.Tensor] = []
     coordinates: list[tuple[int, int, int, int]] = []
