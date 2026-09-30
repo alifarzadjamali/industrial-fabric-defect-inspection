@@ -68,16 +68,6 @@ def predict_grayscale_image(
             values.append(edge)
         return values
 
-    coordinates: list[tuple[int, int, int, int]] = []
-    patches: list[torch.Tensor] = []
-    for y in starts(height):
-        for x in starts(width):
-            patch_height = min(tile_size, height - y)
-            patch_width = min(tile_size, width - x)
-            patch = image[y : y + patch_height, x : x + patch_width]
-            patches.append(_normalise_patch(patch, tile_size, image_size))
-            coordinates.append((x, y, patch_width, patch_height))
-
     probability_sum = np.zeros((height, width), dtype=np.float32)
     weight_sum = np.zeros((height, width), dtype=np.float32)
     if overlap:
@@ -86,24 +76,43 @@ def predict_grayscale_image(
     else:
         window = np.ones((tile_size, tile_size), dtype=np.float32)
     model.eval()
-    with torch.inference_mode():
-        for start in range(0, len(patches), batch_size):
-            batch = torch.stack(patches[start : start + batch_size]).to(device, non_blocking=True)
-            with torch.autocast(
-                device_type=device.type,
-                dtype=torch.float16,
-                enabled=mixed_precision and device.type == "cuda",
-            ):
-                output = torch.sigmoid(model(batch)).float().cpu().numpy()[:, 0]
-            for local_index, predicted_patch in enumerate(output):
-                x, y, patch_width, patch_height = coordinates[start + local_index]
-                if tile_size != image_size:
-                    predicted_patch = resize(
-                        predicted_patch, (tile_size, tile_size), interpolation=INTER_LINEAR
-                    )
-                local_weight = window[:patch_height, :patch_width]
-                probability_sum[y : y + patch_height, x : x + patch_width] += (
-                    predicted_patch[:patch_height, :patch_width] * local_weight
+    patches: list[torch.Tensor] = []
+    coordinates: list[tuple[int, int, int, int]] = []
+
+    def predict_batch() -> None:
+        if not patches:
+            return
+        batch = torch.stack(patches).to(device, non_blocking=True)
+        with torch.autocast(
+            device_type=device.type,
+            dtype=torch.float16,
+            enabled=mixed_precision and device.type == "cuda",
+        ):
+            output = torch.sigmoid(model(batch)).float().cpu().numpy()[:, 0]
+        for predicted_patch, (x, y, patch_width, patch_height) in zip(
+            output, coordinates, strict=True
+        ):
+            if tile_size != image_size:
+                predicted_patch = resize(
+                    predicted_patch, (tile_size, tile_size), interpolation=INTER_LINEAR
                 )
-                weight_sum[y : y + patch_height, x : x + patch_width] += local_weight
+            local_weight = window[:patch_height, :patch_width]
+            probability_sum[y : y + patch_height, x : x + patch_width] += (
+                predicted_patch[:patch_height, :patch_width] * local_weight
+            )
+            weight_sum[y : y + patch_height, x : x + patch_width] += local_weight
+        patches.clear()
+        coordinates.clear()
+
+    with torch.inference_mode():
+        for y in starts(height):
+            for x in starts(width):
+                patch_height = min(tile_size, height - y)
+                patch_width = min(tile_size, width - x)
+                patch = image[y : y + patch_height, x : x + patch_width]
+                patches.append(_normalise_patch(patch, tile_size, image_size))
+                coordinates.append((x, y, patch_width, patch_height))
+                if len(patches) == batch_size:
+                    predict_batch()
+        predict_batch()
     return probability_sum / np.maximum(weight_sum, 1e-8)

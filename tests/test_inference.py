@@ -13,6 +13,16 @@ class ZeroLogitModel(nn.Module):
         )
 
 
+class BatchRecordingModel(ZeroLogitModel):
+    def __init__(self) -> None:
+        super().__init__()
+        self.batch_sizes: list[int] = []
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        self.batch_sizes.append(len(inputs))
+        return super().forward(inputs)
+
+
 def test_tiled_inference_preserves_non_multiple_image_shape() -> None:
     image = np.full((32, 50), 127, dtype=np.uint8)
     probability = predict_grayscale_image(
@@ -60,6 +70,20 @@ def test_overlapping_scaled_inference_preserves_image_shape() -> None:
     )
     assert probability.shape == image.shape
     assert np.allclose(probability, 0.5, atol=1e-6)
+
+
+def test_tiled_inference_streams_only_one_batch_at_a_time() -> None:
+    image = np.full((32, 80), 127, dtype=np.uint8)
+    model = BatchRecordingModel()
+    predict_grayscale_image(
+        model,
+        image,
+        torch.device("cpu"),
+        image_size=16,
+        batch_size=3,
+        mixed_precision=False,
+    )
+    assert model.batch_sizes == [3, 3, 3, 1]
 
 
 @pytest.mark.parametrize(
