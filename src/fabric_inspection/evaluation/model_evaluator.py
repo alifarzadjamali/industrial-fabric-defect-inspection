@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,6 +15,7 @@ import yaml
 from PIL import Image
 from torch.utils.data import DataLoader
 
+from fabric_inspection.data.aitex import sha256_file
 from fabric_inspection.data.dataset import AitexPatchDataset, _seed_worker
 from fabric_inspection.evaluation.metrics import (
     classification_metrics,
@@ -34,14 +34,6 @@ class ImagePrediction:
     target_defective: bool
     probability: np.ndarray
     target: np.ndarray
-
-
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def load_model(checkpoint_path: Path, device: torch.device) -> tuple[ResNet18UNet, dict]:
@@ -365,7 +357,7 @@ def select_and_freeze_thresholds(config: dict[str, object]) -> dict[str, object]
         "segmentation_threshold": segmentation_threshold,
         "image_component_threshold": image_threshold,
         "checkpoint": str(checkpoint_path),
-        "checkpoint_sha256": _sha256(checkpoint_path),
+        "checkpoint_sha256": sha256_file(checkpoint_path),
         "validation_metrics": metrics,
     }
     segmentation_search.to_csv(output_dir / "segmentation_threshold_search.csv", index=False)
@@ -388,7 +380,7 @@ def evaluate_frozen_test(config: dict[str, object]) -> dict[str, object]:
         raise FileNotFoundError("Select and freeze validation thresholds before test evaluation")
     frozen = json.loads(frozen_path.read_text(encoding="utf-8"))
     device, model, checkpoint_path = _runtime(config)
-    if _sha256(checkpoint_path) != frozen["checkpoint_sha256"]:
+    if sha256_file(checkpoint_path) != frozen["checkpoint_sha256"]:
         raise RuntimeError("Checkpoint changed after threshold selection; refusing test evaluation")
     evaluation_split = str(config.get("evaluation_split", "test"))
     test = _predict_configured(config, model, evaluation_split, device)

@@ -15,7 +15,12 @@ import torch
 import yaml
 from scipy.stats import spearmanr
 
-from fabric_inspection.data.aitex import AitexRecord, load_grayscale, load_union_mask
+from fabric_inspection.data.aitex import (
+    AitexRecord,
+    load_grayscale,
+    load_union_mask,
+    sha256_file,
+)
 from fabric_inspection.evaluation.metrics import (
     segmentation_counts,
     segmentation_metrics_from_counts,
@@ -42,14 +47,6 @@ class AnalysisRuntime:
     mixed_precision: bool
 
 
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 def _record_from_row(row: object) -> AitexRecord:
     masks = tuple(Path(item) for item in str(row.mask_paths).split("|") if item and item != "nan")
     defective = bool(row.is_defective)
@@ -74,7 +71,7 @@ def _load_runtime(evaluation_config_path: Path, seed: int) -> tuple[AnalysisRunt
     output_dir = Path(evaluation["output_dir"])
     frozen = json.loads((output_dir / "frozen_thresholds.json").read_text(encoding="utf-8"))
     checkpoint_path = Path(evaluation["checkpoint"])
-    if _sha256(checkpoint_path) != frozen["checkpoint_sha256"]:
+    if sha256_file(checkpoint_path) != frozen["checkpoint_sha256"]:
         raise RuntimeError("Checkpoint differs from the validation-frozen evaluation checkpoint")
     seed_everything(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
