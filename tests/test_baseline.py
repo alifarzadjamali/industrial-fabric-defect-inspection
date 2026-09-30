@@ -13,6 +13,18 @@ def test_local_anomaly_is_detected_and_small_response_is_removed() -> None:
     assert prediction[30, 64]
 
 
+def test_postprocessing_filters_components_by_area() -> None:
+    score = np.zeros((12, 12), dtype=np.float32)
+    score[1:3, 1:3] = 1.0
+    score[6:9, 6:9] = 1.0
+    prediction = postprocess_mask(
+        score, threshold=0.5, morphology_kernel=1, min_component_area=5
+    )
+    assert not prediction[1:3, 1:3].any()
+    assert prediction[6:9, 6:9].all()
+    assert int(prediction.sum()) == 9
+
+
 @pytest.mark.parametrize("argument", ["gaussian_sigma", "local_sigma"])
 def test_anomaly_score_rejects_non_positive_sigma(argument: str) -> None:
     with pytest.raises(ValueError, match="finite and positive"):

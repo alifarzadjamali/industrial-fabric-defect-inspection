@@ -76,9 +76,7 @@ def postprocess_mask(
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
     if min_component_area > 1:
         component_count, labels, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
-        filtered = np.zeros_like(mask)
-        for label in range(1, component_count):
-            if stats[label, cv2.CC_STAT_AREA] >= min_component_area:
-                filtered[labels == label] = 1
-        mask = filtered
+        keep = stats[:, cv2.CC_STAT_AREA] >= min_component_area
+        keep[0] = False
+        mask = keep[labels].astype(np.uint8)
     return mask.astype(bool)
