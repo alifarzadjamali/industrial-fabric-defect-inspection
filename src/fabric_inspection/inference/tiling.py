@@ -84,13 +84,19 @@ def predict_grayscale_image(
     weight_sum = np.zeros((height, width), dtype=np.float32)
     window = _blend_window(tile_size, overlap)
     model.eval()
-    patches: list[torch.Tensor] = []
+    patch_batch = torch.empty(
+        (batch_size, 3, image_size, image_size),
+        dtype=torch.float32,
+        pin_memory=device.type == "cuda",
+    )
+    patch_count = 0
     coordinates: list[tuple[int, int, int, int]] = []
 
     def predict_batch() -> None:
-        if not patches:
+        nonlocal patch_count
+        if not patch_count:
             return
-        batch = torch.stack(patches).to(device, non_blocking=True)
+        batch = patch_batch[:patch_count].to(device, non_blocking=True)
         with torch.autocast(
             device_type=device.type,
             dtype=torch.float16,
@@ -109,7 +115,7 @@ def predict_grayscale_image(
                 predicted_patch[:patch_height, :patch_width] * local_weight
             )
             weight_sum[y : y + patch_height, x : x + patch_width] += local_weight
-        patches.clear()
+        patch_count = 0
         coordinates.clear()
 
     with torch.inference_mode():
@@ -118,9 +124,10 @@ def predict_grayscale_image(
                 patch_height = min(tile_size, height - y)
                 patch_width = min(tile_size, width - x)
                 patch = image[y : y + patch_height, x : x + patch_width]
-                patches.append(_normalise_patch(patch, tile_size, image_size))
+                patch_batch[patch_count].copy_(_normalise_patch(patch, tile_size, image_size))
+                patch_count += 1
                 coordinates.append((x, y, patch_width, patch_height))
-                if len(patches) == batch_size:
+                if patch_count == batch_size:
                     predict_batch()
         predict_batch()
     return probability_sum / np.maximum(weight_sum, 1e-8)
