@@ -206,10 +206,58 @@ def _segmentation_summary(
 def select_segmentation_threshold(
     images: list[ImagePrediction], candidates: list[float]
 ) -> tuple[float, pd.DataFrame]:
-    rows = [
-        {"segmentation_threshold": threshold, **_segmentation_summary(images, threshold)}
-        for threshold in candidates
-    ]
+    if not candidates:
+        raise ValueError("At least one segmentation threshold candidate is required")
+    thresholds = np.asarray(candidates, dtype=np.float64)
+    if not np.isfinite(thresholds).all():
+        raise ValueError("Segmentation threshold candidates must be finite")
+
+    totals = np.zeros((len(thresholds), 4), dtype=np.int64)
+    defective_dice = np.zeros(len(thresholds), dtype=np.float64)
+    defective_count = 0
+    for image in images:
+        probability = np.asarray(image.probability)
+        target = np.asarray(image.target, dtype=bool)
+        if probability.shape != target.shape:
+            raise ValueError(f"Shape mismatch: {probability.shape} != {target.shape}")
+        if not np.isfinite(probability).all():
+            raise ValueError("Segmentation probabilities must be finite")
+
+        order = np.argsort(probability, axis=None)
+        sorted_probability = probability.ravel()[order]
+        sorted_target = target.ravel()[order]
+        positive_prefix = np.concatenate(([0], np.cumsum(sorted_target, dtype=np.int64)))
+        # NumPy casts a scalar threshold to the probability array's dtype for
+        # direct comparisons; mirror that behavior at representable boundaries.
+        image_thresholds = thresholds.astype(probability.dtype, copy=False)
+        split_indices = np.searchsorted(sorted_probability, image_thresholds, side="left")
+        positive_total = int(positive_prefix[-1])
+        true_positive = positive_total - positive_prefix[split_indices]
+        predicted_positive = probability.size - split_indices
+        false_positive = predicted_positive - true_positive
+        false_negative = positive_total - true_positive
+        true_negative = split_indices - positive_prefix[split_indices]
+        counts = np.column_stack(
+            (true_positive, false_positive, false_negative, true_negative)
+        )
+        totals += counts
+        if image.target_defective:
+            denominators = 2 * true_positive + false_positive + false_negative
+            defective_dice += np.divide(
+                2 * true_positive,
+                denominators,
+                out=np.ones(len(thresholds), dtype=np.float64),
+                where=denominators != 0,
+            )
+            defective_count += 1
+
+    rows = []
+    for index, threshold in enumerate(candidates):
+        metrics = segmentation_metrics_from_counts(*totals[index].tolist())
+        metrics["macro_defective_dice"] = (
+            float(defective_dice[index] / defective_count) if defective_count else 0.0
+        )
+        rows.append({"segmentation_threshold": threshold, **metrics})
     search = pd.DataFrame(rows).sort_values("segmentation_threshold", ignore_index=True)
     best = search.sort_values(
         ["dice", "pixel_recall", "segmentation_threshold"],

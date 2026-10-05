@@ -17,6 +17,33 @@ def test_threshold_selection_uses_dice() -> None:
     assert float(search.loc[search["segmentation_threshold"] == 0.5, "dice"].iloc[0]) == 1.0
 
 
+def test_threshold_search_matches_individual_segmentation_summaries() -> None:
+    images = [
+        ImagePrediction(
+            "defect",
+            "defect",
+            True,
+            np.array([[0.2, 0.5], [0.8, 0.9]], dtype=np.float32),
+            np.array([[0, 1], [1, 0]], dtype=bool),
+        ),
+        ImagePrediction(
+            "normal",
+            "normal",
+            False,
+            np.array([[0.1, 0.4], [0.6, 0.7]], dtype=np.float32),
+            np.zeros((2, 2), dtype=bool),
+        ),
+    ]
+    candidates = [0.7, 0.2, 0.5]
+    _, search = select_segmentation_threshold(images, candidates)
+    for threshold in candidates:
+        expected = _segmentation_summary(images, threshold)
+        actual = search.loc[search["segmentation_threshold"] == threshold].iloc[0]
+        for metric in ("dice", "iou", "pixel_precision", "pixel_recall"):
+            assert actual[metric] == expected[metric]
+        assert actual["macro_defective_dice"] == expected["macro_defective_dice"]
+
+
 def test_largest_component_ignores_disconnected_total_area() -> None:
     mask = np.zeros((10, 10), dtype=bool)
     mask[1:3, 1:3] = True
