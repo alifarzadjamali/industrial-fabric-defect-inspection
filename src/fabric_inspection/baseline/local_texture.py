@@ -68,15 +68,17 @@ def postprocess_mask(
         raise ValueError("Morphology kernel must be positive")
     if min_component_area < 1:
         raise ValueError("Minimum component area must be positive")
-    mask = (score >= threshold).astype(np.uint8)
+    mask = score >= threshold
     if morphology_kernel > 1:
         kernel = cv2.getStructuringElement(
             cv2.MORPH_ELLIPSE, (morphology_kernel, morphology_kernel)
         )
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+        mask = cv2.morphologyEx(mask.astype(np.uint8), cv2.MORPH_CLOSE, kernel)
     if min_component_area > 1:
-        component_count, labels, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
+        _, labels, stats, _ = cv2.connectedComponentsWithStats(
+            mask.astype(np.uint8, copy=False), connectivity=8
+        )
         keep = stats[:, cv2.CC_STAT_AREA] >= min_component_area
         keep[0] = False
-        mask = keep[labels].astype(np.uint8)
-    return mask.astype(bool)
+        return keep[labels]
+    return mask.astype(bool, copy=False)

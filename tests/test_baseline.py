@@ -25,6 +25,15 @@ def test_postprocessing_filters_components_by_area() -> None:
     assert int(prediction.sum()) == 9
 
 
+def test_postprocessing_returns_boolean_mask_without_component_filtering() -> None:
+    score = np.array([[0.1, 0.7]], dtype=np.float32)
+    prediction = postprocess_mask(
+        score, threshold=0.5, morphology_kernel=1, min_component_area=1
+    )
+    assert prediction.dtype == np.bool_
+    assert prediction.tolist() == [[False, True]]
+
+
 @pytest.mark.parametrize("argument", ["gaussian_sigma", "local_sigma"])
 def test_anomaly_score_rejects_non_positive_sigma(argument: str) -> None:
     with pytest.raises(ValueError, match="finite and positive"):
