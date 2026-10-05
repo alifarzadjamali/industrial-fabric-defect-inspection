@@ -19,6 +19,7 @@ from fabric_inspection.data.aitex import sha256_file
 from fabric_inspection.data.dataset import AitexPatchDataset, _seed_worker
 from fabric_inspection.evaluation.metrics import (
     classification_metrics,
+    classification_threshold_metrics,
     segmentation_counts,
     segmentation_metrics_from_counts,
 )
@@ -281,12 +282,9 @@ def select_image_threshold(
     scores = [
         largest_component_fraction(image.probability >= segmentation_threshold) for image in images
     ]
-    candidates = sorted({0.0, *scores, float(np.nextafter(max(scores), np.inf))})
-    rows: list[dict[str, object]] = []
-    for threshold in candidates:
-        metrics = classification_metrics(targets, [score >= threshold for score in scores], scores)
-        rows.append({"image_component_threshold": threshold, **metrics})
-    search = pd.DataFrame(rows)
+    search = pd.DataFrame(
+        classification_threshold_metrics(targets, scores, "image_component_threshold")
+    )
     best = search.sort_values(
         ["f1", "recall", "accuracy", "image_component_threshold"],
         ascending=[False, False, False, True],

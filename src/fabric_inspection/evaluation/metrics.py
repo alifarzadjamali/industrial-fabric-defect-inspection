@@ -63,14 +63,20 @@ def classification_metrics(
     fp = int(np.logical_and(prediction, ~target).sum())
     fn = int(np.logical_and(~prediction, target).sum())
     tn = target.size - tp - fp - fn
-    precision = safe_divide(tp, tp + fp)
-    recall = safe_divide(tp, tp + fn)
-    f1 = safe_divide(2 * precision * recall, precision + recall)
     auc: float | None = None
     if score is not None and target.any() and not target.all():
         auc = float(roc_auc_score(target, score))
+    return _classification_metrics_from_counts(tp, fp, fn, tn, auc)
+
+
+def _classification_metrics_from_counts(
+    tp: int, fp: int, fn: int, tn: int, auc: float | None
+) -> dict[str, float | int | list[list[int]] | None]:
+    precision = safe_divide(tp, tp + fp)
+    recall = safe_divide(tp, tp + fn)
+    f1 = safe_divide(2 * precision * recall, precision + recall)
     return {
-        "accuracy": safe_divide(tp + tn, len(target)),
+        "accuracy": safe_divide(tp + tn, tp + fp + fn + tn),
         "precision": precision,
         "recall": recall,
         "f1": f1,
@@ -81,3 +87,48 @@ def classification_metrics(
         "false_negatives": fn,
         "true_negatives": tn,
     }
+
+
+def classification_threshold_metrics(
+    targets: Iterable[bool], scores: Iterable[float], threshold_name: str
+) -> list[dict[str, float | int | list[list[int]] | None]]:
+    """Evaluate every score-derived threshold using one sorted cumulative pass."""
+
+    target = np.asarray(list(targets), dtype=bool)
+    score = np.asarray(list(scores), dtype=float)
+    if target.size == 0:
+        raise ValueError("Classification threshold search requires at least one sample")
+    if target.shape != score.shape:
+        raise ValueError("Classification targets and scores must have equal length")
+    if not np.isfinite(score).all():
+        raise ValueError("Classification scores must be finite")
+
+    order = np.argsort(score, kind="stable")
+    sorted_score = score[order]
+    positive_prefix = np.concatenate(([0], np.cumsum(target[order], dtype=np.int64)))
+    candidates = np.unique(
+        np.concatenate(([0.0], score, [np.nextafter(float(score.max()), np.inf)]))
+    )
+    split_indices = np.searchsorted(sorted_score, candidates, side="left")
+    positive_total = int(positive_prefix[-1])
+    true_positive = positive_total - positive_prefix[split_indices]
+    predicted_positive = len(score) - split_indices
+    false_positive = predicted_positive - true_positive
+    false_negative = positive_total - true_positive
+    true_negative = split_indices - positive_prefix[split_indices]
+    auc = (
+        float(roc_auc_score(target, score)) if positive_total not in {0, len(target)} else None
+    )
+    return [
+        {
+            threshold_name: float(threshold),
+            **_classification_metrics_from_counts(
+                int(true_positive[index]),
+                int(false_positive[index]),
+                int(false_negative[index]),
+                int(true_negative[index]),
+                auc,
+            ),
+        }
+        for index, threshold in enumerate(candidates)
+    ]

@@ -3,6 +3,7 @@ import pytest
 
 from fabric_inspection.evaluation.metrics import (
     classification_metrics,
+    classification_threshold_metrics,
     segmentation_counts,
     segmentation_metrics_from_counts,
 )
@@ -53,3 +54,18 @@ def test_classification_metrics_reject_non_finite_scores(score: float) -> None:
 def test_classification_metrics_reject_empty_inputs() -> None:
     with pytest.raises(ValueError, match="at least one sample"):
         classification_metrics([], [])
+
+
+def test_classification_threshold_metrics_match_individual_evaluations() -> None:
+    targets = [False, True, False, True]
+    scores = [0.2, 0.8, 0.2, 0.6]
+    rows = classification_threshold_metrics(targets, scores, "threshold")
+    assert [row["threshold"] for row in rows] == sorted(
+        {0.0, *scores, np.nextafter(max(scores), np.inf)}
+    )
+    for row in rows:
+        threshold = float(row["threshold"])
+        expected = classification_metrics(
+            targets, [score >= threshold for score in scores], scores
+        )
+        assert {key: row[key] for key in expected} == expected

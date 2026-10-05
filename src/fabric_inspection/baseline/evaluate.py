@@ -14,6 +14,7 @@ from fabric_inspection.baseline.local_texture import anomaly_score, postprocess_
 from fabric_inspection.data.aitex import AitexRecord, load_grayscale, load_union_mask
 from fabric_inspection.evaluation.metrics import (
     classification_metrics,
+    classification_threshold_metrics,
     segmentation_counts,
     segmentation_metrics_from_counts,
 )
@@ -106,12 +107,9 @@ def _select_image_threshold(
     areas = [float(prediction.mean()) for prediction in predictions]
     # Exhaustively consider validation-derived operating points. The test set has
     # no influence on either the candidates or the selected threshold.
-    candidates = sorted({0.0, *areas, np.nextafter(max(areas), np.inf)})
-    rows = []
-    for threshold in candidates:
-        metrics = classification_metrics(targets, [area >= threshold for area in areas], areas)
-        rows.append({"image_area_threshold": threshold, **metrics})
-    search = pd.DataFrame(rows)
+    search = pd.DataFrame(
+        classification_threshold_metrics(targets, areas, "image_area_threshold")
+    )
     best = search.sort_values(
         ["f1", "recall", "image_area_threshold"], ascending=[False, False, True]
     ).iloc[0]
