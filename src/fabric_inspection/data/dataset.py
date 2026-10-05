@@ -28,6 +28,15 @@ def _parse_mask_paths(value: object) -> list[str]:
     return [item for item in str(value).split("|") if item and item != "nan"]
 
 
+def _normalise_grayscale(image: np.ndarray) -> np.ndarray:
+    """Expand a scaled grayscale image and normalize it without intermediate channels."""
+
+    channels = np.empty((3, *image.shape), dtype=np.float32)
+    np.subtract(image[None, :, :], IMAGENET_MEAN, out=channels)
+    np.divide(channels, IMAGENET_STD, out=channels)
+    return channels
+
+
 def _pad_patch(array: np.ndarray, size: int, is_mask: bool = False) -> np.ndarray:
     vertical = size - array.shape[0]
     horizontal = size - array.shape[1]
@@ -148,8 +157,7 @@ class AitexPatchDataset(Dataset[tuple[torch.Tensor, torch.Tensor]]):
             image, mask = _augment(image, mask, self.augmentation_profile)
         else:
             image = image.astype(np.float32) / 255.0
-        channels = np.repeat(image[None, :, :], 3, axis=0)
-        channels = (channels - IMAGENET_MEAN) / IMAGENET_STD
+        channels = _normalise_grayscale(image)
         image_tensor = torch.from_numpy(np.ascontiguousarray(channels))
         mask_tensor = torch.from_numpy(np.ascontiguousarray(mask[None, :, :])).float()
         return image_tensor, mask_tensor

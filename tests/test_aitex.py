@@ -6,7 +6,22 @@ import pytest
 from PIL import Image
 
 from fabric_inspection.data.aitex import discover_records, load_union_mask, sha256_file
-from fabric_inspection.data.dataset import AitexPatchDataset
+from fabric_inspection.data.dataset import AitexPatchDataset, _normalise_grayscale
+
+
+def test_grayscale_normalisation_expands_channels_with_imagenet_statistics() -> None:
+    grayscale = np.array([[0.0, 1.0]], dtype=np.float32)
+    normalised = _normalise_grayscale(grayscale)
+    expected = np.array(
+        [
+            [[-0.485 / 0.229, (1.0 - 0.485) / 0.229]],
+            [[-0.456 / 0.224, (1.0 - 0.456) / 0.224]],
+            [[-0.406 / 0.225, (1.0 - 0.406) / 0.225]],
+        ],
+        dtype=np.float32,
+    )
+    assert normalised.dtype == np.float32
+    assert np.allclose(normalised, expected)
 
 
 def test_sha256_rejects_non_positive_chunk_size() -> None:

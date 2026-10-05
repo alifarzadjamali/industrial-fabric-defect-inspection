@@ -9,7 +9,7 @@ import torch
 from cv2 import INTER_LINEAR, resize
 from torch import nn
 
-from fabric_inspection.data.dataset import IMAGENET_MEAN, IMAGENET_STD
+from fabric_inspection.data.dataset import _normalise_grayscale
 
 
 def _pad_patch(patch: np.ndarray, size: int) -> np.ndarray:
@@ -28,8 +28,7 @@ def _normalise_patch(patch: np.ndarray, source_size: int, image_size: int) -> to
     if source_size != image_size:
         padded = resize(padded, (image_size, image_size), interpolation=INTER_LINEAR)
     scaled = padded.astype(np.float32) / 255.0
-    channels = np.repeat(scaled[None, :, :], 3, axis=0)
-    channels = (channels - IMAGENET_MEAN) / IMAGENET_STD
+    channels = _normalise_grayscale(scaled)
     # ``scaled`` is float32, so the normalized channels already have PyTorch's
     # default floating-point dtype.  Avoid an otherwise redundant tensor copy.
     return torch.from_numpy(np.ascontiguousarray(channels))
