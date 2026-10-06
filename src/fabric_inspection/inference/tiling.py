@@ -18,7 +18,7 @@ def _pad_patch(patch: np.ndarray, size: int) -> np.ndarray:
     if vertical < 0 or horizontal < 0:
         raise ValueError(f"Patch {patch.shape} exceeds tile size {size}")
     if not vertical and not horizontal:
-        return patch.copy()
+        return patch
     mode = "reflect" if min(patch.shape) > 1 else "edge"
     return np.pad(patch, ((0, vertical), (0, horizontal)), mode=mode)
 

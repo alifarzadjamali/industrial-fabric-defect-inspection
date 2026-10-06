@@ -3,7 +3,7 @@ import pytest
 import torch
 from torch import nn
 
-from fabric_inspection.inference.tiling import _blend_window, predict_grayscale_image
+from fabric_inspection.inference.tiling import _blend_window, _pad_patch, predict_grayscale_image
 
 
 class ZeroLogitModel(nn.Module):
@@ -21,6 +21,11 @@ class BatchRecordingModel(ZeroLogitModel):
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         self.batch_sizes.append(len(inputs))
         return super().forward(inputs)
+
+
+def test_full_sized_tile_does_not_require_a_copy() -> None:
+    patch = np.zeros((8, 8), dtype=np.uint8)
+    assert _pad_patch(patch, 8) is patch
 
 
 def test_tiled_inference_preserves_non_multiple_image_shape() -> None:

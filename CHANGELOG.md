@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Avoided redundant copies when training or inference tiles already match the requested size.
 - Streamed tiled inference batches and cached blend windows to reduce repeated allocations.
 - Vectorized baseline component filtering and reduced training metric mask allocations.
 - Precomputed patch metadata and made padding safe for one-pixel image dimensions.
