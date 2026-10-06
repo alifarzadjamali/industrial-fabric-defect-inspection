@@ -1,7 +1,9 @@
 import numpy as np
+import pandas as pd
 
 from fabric_inspection.evaluation.model_evaluator import (
     ImagePrediction,
+    _plot_image_threshold_search,
     _segmentation_summary,
     largest_component_fraction,
     select_segmentation_threshold,
@@ -54,3 +56,17 @@ def test_largest_component_ignores_disconnected_total_area() -> None:
 def test_empty_evaluation_has_defined_macro_defective_dice() -> None:
     summary = _segmentation_summary([], threshold=0.5)
     assert summary["macro_defective_dice"] == 0.0
+
+
+def test_image_threshold_plot_is_written(tmp_path) -> None:
+    search = pd.DataFrame(
+        {
+            "image_component_threshold": [0.0, 0.1, 0.2],
+            "f1": [0.5, 1.0, 0.0],
+            "precision": [1 / 3, 1.0, 0.0],
+            "recall": [1.0, 1.0, 0.0],
+        }
+    )
+    output = tmp_path / "image_thresholds.png"
+    _plot_image_threshold_search(search, selected=0.1, path=output)
+    assert output.stat().st_size > 0

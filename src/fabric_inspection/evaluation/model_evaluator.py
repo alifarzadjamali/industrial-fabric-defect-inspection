@@ -357,6 +357,24 @@ def _plot_threshold_search(search: pd.DataFrame, selected: float, path: Path) ->
     plt.close(figure)
 
 
+def _plot_image_threshold_search(search: pd.DataFrame, selected: float, path: Path) -> None:
+    figure, axis = plt.subplots(figsize=(7, 4))
+    for column, label in (("f1", "F1"), ("precision", "Precision"), ("recall", "Recall")):
+        axis.step(
+            search["image_component_threshold"],
+            search[column],
+            where="post",
+            label=label,
+        )
+    axis.axvline(selected, color="black", linestyle="--", label=f"Selected: {selected:.4g}")
+    axis.set(xlabel="Largest-component fraction", ylabel="Metric", ylim=(0, 1))
+    axis.grid(alpha=0.25)
+    axis.legend()
+    figure.tight_layout()
+    figure.savefig(path, dpi=160, bbox_inches="tight")
+    plt.close(figure)
+
+
 def _plot_confusion_matrix(matrix: list[list[int]], path: Path) -> None:
     values = np.asarray(matrix)
     figure, axis = plt.subplots(figsize=(4.5, 4))
@@ -415,6 +433,9 @@ def select_and_freeze_thresholds(config: dict[str, object]) -> dict[str, object]
     )
     _plot_threshold_search(
         segmentation_search, segmentation_threshold, output_dir / "validation_thresholds.png"
+    )
+    _plot_image_threshold_search(
+        image_search, image_threshold, output_dir / "validation_image_thresholds.png"
     )
     return frozen
 
