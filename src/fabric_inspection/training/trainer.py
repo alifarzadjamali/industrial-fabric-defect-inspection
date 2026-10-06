@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import platform
 import random
 import shutil
@@ -45,6 +46,9 @@ def _run_epoch(
     use_amp: bool = False,
     progress_bar: bool = True,
 ) -> dict[str, float]:
+    if not math.isfinite(metric_threshold) or not 0 < metric_threshold < 1:
+        raise ValueError("Metric threshold must be finite and between zero and one")
+    metric_logit = math.log(metric_threshold / (1.0 - metric_threshold))
     training = optimizer is not None
     model.train(training)
     total_loss = 0.0
@@ -76,7 +80,7 @@ def _run_epoch(
                 scaler.step(optimizer)
                 scaler.update()
         total_loss += float(loss.detach()) * images.shape[0]
-        predictions = torch.sigmoid(logits.detach()) >= metric_threshold
+        predictions = logits.detach() >= metric_logit
         target_mask = targets >= 0.5
         batch_true_positive = int((predictions & target_mask).sum())
         true_positive += batch_true_positive
