@@ -111,9 +111,9 @@ def predict_grayscale_image(
                     predicted_patch, (tile_size, tile_size), interpolation=INTER_LINEAR
                 )
             local_weight = window[:patch_height, :patch_width]
-            probability_sum[y : y + patch_height, x : x + patch_width] += (
-                predicted_patch[:patch_height, :patch_width] * local_weight
-            )
+            local_prediction = predicted_patch[:patch_height, :patch_width]
+            np.multiply(local_prediction, local_weight, out=local_prediction)
+            probability_sum[y : y + patch_height, x : x + patch_width] += local_prediction
             weight_sum[y : y + patch_height, x : x + patch_width] += local_weight
         patch_count = 0
         coordinates.clear()
@@ -130,4 +130,5 @@ def predict_grayscale_image(
                 if patch_count == batch_size:
                     predict_batch()
         predict_batch()
-    return probability_sum / np.maximum(weight_sum, 1e-8)
+    np.divide(probability_sum, weight_sum, out=probability_sum)
+    return probability_sum
