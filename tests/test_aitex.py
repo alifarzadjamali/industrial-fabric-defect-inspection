@@ -50,6 +50,19 @@ def test_discovery_associates_and_unions_multiple_masks(tmp_path: Path) -> None:
     assert int(load_union_mask(records[0]).sum()) == 8
 
 
+def test_discovery_rejects_duplicate_image_ids(tmp_path: Path) -> None:
+    first_dir = tmp_path / "first"
+    second_dir = tmp_path / "second"
+    first_dir.mkdir()
+    second_dir.mkdir()
+    image = Image.fromarray(np.zeros((4, 4), dtype=np.uint8))
+    image.save(first_dir / "0001_002_01.png")
+    image.save(second_dir / "0001_002_01.png")
+
+    with pytest.raises(ValueError, match="Duplicate AITEX image ID"):
+        discover_records(tmp_path)
+
+
 @pytest.mark.parametrize(
     ("argument", "value", "message"),
     [

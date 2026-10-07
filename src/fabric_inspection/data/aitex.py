@@ -105,10 +105,18 @@ def discover_records(raw_dir: Path) -> list[AitexRecord]:
             images.append(path)
 
     records: list[AitexRecord] = []
+    image_paths_by_id: dict[str, Path] = {}
     for path in images:
         match = _IMAGE_RE.match(path.stem)
         if not match:
             continue
+        canonical_id = path.stem.lower()
+        if canonical_id in image_paths_by_id:
+            raise ValueError(
+                f"Duplicate AITEX image ID {path.stem!r}: "
+                f"{image_paths_by_id[canonical_id]} and {path}"
+            )
+        image_paths_by_id[canonical_id] = path
         defect_code = match.group("defect").zfill(3)
         is_defective = defect_code != "000" or "nodefect" not in str(path).lower()
         if defect_code == "000":
