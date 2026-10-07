@@ -91,6 +91,22 @@ def test_tiled_inference_streams_only_one_batch_at_a_time() -> None:
     assert model.batch_sizes == [3, 3, 3, 1]
 
 
+@pytest.mark.parametrize("training", [True, False])
+def test_tiled_inference_restores_model_mode(training: bool) -> None:
+    model = ZeroLogitModel()
+    model.train(training)
+
+    predict_grayscale_image(
+        model,
+        np.zeros((8, 8), dtype=np.uint8),
+        torch.device("cpu"),
+        image_size=8,
+        mixed_precision=False,
+    )
+
+    assert model.training is training
+
+
 def test_blend_windows_are_reused_and_read_only() -> None:
     _blend_window.cache_clear()
     first = _blend_window(16, 8)

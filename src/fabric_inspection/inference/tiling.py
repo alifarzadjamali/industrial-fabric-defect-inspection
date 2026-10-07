@@ -83,6 +83,7 @@ def predict_grayscale_image(
     probability_sum = np.zeros((height, width), dtype=np.float32)
     weight_sum = np.zeros((height, width), dtype=np.float32)
     window = _blend_window(tile_size, overlap)
+    was_training = model.training
     model.eval()
     patch_batch = torch.empty(
         (batch_size, 3, image_size, image_size),
@@ -118,17 +119,22 @@ def predict_grayscale_image(
         patch_count = 0
         coordinates.clear()
 
-    with torch.inference_mode():
-        for y in starts(height):
-            for x in starts(width):
-                patch_height = min(tile_size, height - y)
-                patch_width = min(tile_size, width - x)
-                patch = image[y : y + patch_height, x : x + patch_width]
-                patch_batch[patch_count].copy_(_normalise_patch(patch, tile_size, image_size))
-                patch_count += 1
-                coordinates.append((x, y, patch_width, patch_height))
-                if patch_count == batch_size:
-                    predict_batch()
-        predict_batch()
+    try:
+        with torch.inference_mode():
+            for y in starts(height):
+                for x in starts(width):
+                    patch_height = min(tile_size, height - y)
+                    patch_width = min(tile_size, width - x)
+                    patch = image[y : y + patch_height, x : x + patch_width]
+                    patch_batch[patch_count].copy_(
+                        _normalise_patch(patch, tile_size, image_size)
+                    )
+                    patch_count += 1
+                    coordinates.append((x, y, patch_width, patch_height))
+                    if patch_count == batch_size:
+                        predict_batch()
+            predict_batch()
+    finally:
+        model.train(was_training)
     np.divide(probability_sum, weight_sum, out=probability_sum)
     return probability_sum
