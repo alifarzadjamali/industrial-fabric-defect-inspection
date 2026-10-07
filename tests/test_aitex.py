@@ -6,7 +6,7 @@ import pytest
 from PIL import Image
 
 from fabric_inspection.data.aitex import discover_records, load_union_mask, sha256_file
-from fabric_inspection.data.dataset import AitexPatchDataset, _normalise_grayscale
+from fabric_inspection.data.dataset import AitexPatchDataset, _normalise_grayscale, make_dataloaders
 
 
 def test_grayscale_normalisation_expands_channels_with_imagenet_statistics() -> None:
@@ -152,3 +152,31 @@ def test_patch_dataset_rejects_out_of_bounds_geometry(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="exceeds image dimensions"):
         dataset[0]
+
+
+@pytest.mark.parametrize(
+    ("argument", "value", "message"),
+    [
+        ("batch_size", 0, "Batch size must be positive"),
+        ("num_workers", -1, "workers must be non-negative"),
+        ("positive_sampling_fraction", 1.0, "sampling fraction"),
+        ("positive_sampling_fraction", float("nan"), "sampling fraction"),
+        ("small_defect_power", -0.1, "Small-defect power"),
+        ("hard_negative_multiplier", 0.0, "Hard-negative multiplier"),
+    ],
+)
+def test_dataloaders_validate_sampler_configuration(
+    tmp_path: Path, argument: str, value: object, message: str
+) -> None:
+    arguments = {
+        "manifest_path": tmp_path / "missing.csv",
+        "image_size": 4,
+        "batch_size": 1,
+        "num_workers": 0,
+        "positive_sampling_fraction": 0.5,
+        "seed": 42,
+        argument: value,
+    }
+
+    with pytest.raises(ValueError, match=message):
+        make_dataloaders(**arguments)

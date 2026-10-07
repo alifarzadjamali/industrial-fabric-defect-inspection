@@ -205,6 +205,16 @@ def make_dataloaders(
     hard_negative_fabrics: tuple[str, ...] = (),
     hard_negative_multiplier: float = 1.0,
 ) -> tuple[DataLoader, DataLoader, dict[str, int]]:
+    if batch_size <= 0:
+        raise ValueError("Batch size must be positive")
+    if num_workers < 0:
+        raise ValueError("Number of workers must be non-negative")
+    if not np.isfinite(positive_sampling_fraction) or not 0 < positive_sampling_fraction < 1:
+        raise ValueError("Positive sampling fraction must be finite and between zero and one")
+    if not np.isfinite(small_defect_power) or small_defect_power < 0:
+        raise ValueError("Small-defect power must be finite and non-negative")
+    if not np.isfinite(hard_negative_multiplier) or hard_negative_multiplier <= 0:
+        raise ValueError("Hard-negative multiplier must be finite and positive")
     manifest = pd.read_csv(manifest_path)
     train_dataset = AitexPatchDataset(
         manifest,
