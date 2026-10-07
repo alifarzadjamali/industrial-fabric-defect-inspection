@@ -128,3 +128,27 @@ def test_patch_dataset_pads_single_pixel_dimensions(tmp_path: Path) -> None:
     image, mask = dataset[0]
     assert image.shape == (3, 4, 4)
     assert mask.shape == (1, 4, 4)
+
+
+def test_patch_dataset_rejects_out_of_bounds_geometry(tmp_path: Path) -> None:
+    image_path = tmp_path / "image.png"
+    Image.fromarray(np.zeros((4, 4), dtype=np.uint8)).save(image_path)
+    manifest = pd.DataFrame(
+        [
+            {
+                "split": "validation",
+                "has_segmentation_target": True,
+                "is_positive": False,
+                "x": 3,
+                "y": 0,
+                "width": 2,
+                "height": 4,
+                "image_path": image_path,
+                "mask_paths": "",
+            }
+        ]
+    )
+    dataset = AitexPatchDataset(manifest, "validation", image_size=4)
+
+    with pytest.raises(ValueError, match="exceeds image dimensions"):
+        dataset[0]

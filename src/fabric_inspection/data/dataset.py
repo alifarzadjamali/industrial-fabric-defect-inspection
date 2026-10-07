@@ -122,6 +122,17 @@ class AitexPatchDataset(Dataset[tuple[torch.Tensor, torch.Tensor]]):
             )
             for row in self.rows.itertuples(index=False)
         ]
+        invalid_geometry = [
+            (index, x, y, width, height)
+            for index, (x, y, width, height, _, _) in enumerate(self._samples)
+            if x < 0 or y < 0 or width <= 0 or height <= 0
+        ]
+        if invalid_geometry:
+            index, x, y, width, height = invalid_geometry[0]
+            raise ValueError(
+                f"Invalid patch geometry at row {index}: "
+                f"x={x}, y={y}, width={width}, height={height}"
+            )
         self.image_size = image_size
         self.source_size = source_size or image_size
         self.augment = augment
@@ -138,10 +149,22 @@ class AitexPatchDataset(Dataset[tuple[torch.Tensor, torch.Tensor]]):
 
     def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor]:
         x, y, width, height, image_path, mask_paths = self._samples[index]
-        image = _cached_grayscale(image_path)[y : y + height, x : x + width]
+        source_image = _cached_grayscale(image_path)
+        if y + height > source_image.shape[0] or x + width > source_image.shape[1]:
+            raise ValueError(
+                f"Patch at ({x}, {y}, {width}, {height}) exceeds image dimensions "
+                f"{source_image.shape} for {image_path}"
+            )
+        image = source_image[y : y + height, x : x + width]
         mask = np.zeros((height, width), dtype=bool)
         for path in mask_paths:
-            mask |= _cached_grayscale(path)[y : y + height, x : x + width] > 0
+            source_mask = _cached_grayscale(path)
+            if source_mask.shape != source_image.shape:
+                raise ValueError(
+                    f"Mask dimensions {source_mask.shape} do not match image dimensions "
+                    f"{source_image.shape} for {path}"
+                )
+            mask |= source_mask[y : y + height, x : x + width] > 0
         image = _pad_patch(image, self.source_size)
         mask = _pad_patch(mask, self.source_size, is_mask=True)
         if self.source_size != self.image_size:
