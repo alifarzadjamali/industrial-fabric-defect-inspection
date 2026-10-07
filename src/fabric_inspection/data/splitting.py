@@ -79,6 +79,18 @@ def create_patch_manifest(split_frame: pd.DataFrame, patch_size: int = 256) -> p
 
     if patch_size <= 0:
         raise ValueError("Patch size must be positive")
+    required_columns = {
+        "image_id",
+        "image_path",
+        "is_defective",
+        "defect_name",
+        "fabric_code",
+        "mask_paths",
+        "split",
+    }
+    missing_columns = sorted(required_columns.difference(split_frame.columns))
+    if missing_columns:
+        raise ValueError(f"Split manifest is missing required columns: {missing_columns}")
     rows: list[dict[str, object]] = []
     for source in split_frame.itertuples(index=False):
         with Image.open(source.image_path) as image:

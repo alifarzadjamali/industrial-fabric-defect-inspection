@@ -44,3 +44,8 @@ def test_patch_manifest_rejects_non_positive_patch_size() -> None:
 def test_split_manifest_rejects_empty_records() -> None:
     with pytest.raises(ValueError, match="At least one source image"):
         create_split_manifest([])
+
+
+def test_patch_manifest_reports_missing_columns() -> None:
+    with pytest.raises(ValueError, match=r"missing required columns: .*'image_path'"):
+        create_patch_manifest(pd.DataFrame({"image_id": ["sample"]}))
