@@ -103,7 +103,13 @@ def create_patch_manifest(split_frame: pd.DataFrame, patch_size: int = 256) -> p
             union_mask = np.zeros((height, width), dtype=bool)
             for mask_path in mask_paths:
                 with Image.open(mask_path) as mask_image:
-                    union_mask |= np.asarray(mask_image.convert("L")) > 0
+                    mask = np.asarray(mask_image.convert("L"))
+                if mask.shape != (height, width):
+                    raise ValueError(
+                        f"Mask dimension mismatch for {source.image_id}: "
+                        f"{mask.shape} != {(height, width)}"
+                    )
+                union_mask |= mask > 0
         has_segmentation_target = not source.is_defective or bool(mask_paths)
         for y in range(0, height, patch_size):
             for x in range(0, width, patch_size):

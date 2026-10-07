@@ -1,7 +1,9 @@
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
+from PIL import Image
 
 from fabric_inspection.data.aitex import AitexRecord
 from fabric_inspection.data.splitting import create_patch_manifest, create_split_manifest
@@ -49,3 +51,26 @@ def test_split_manifest_rejects_empty_records() -> None:
 def test_patch_manifest_reports_missing_columns() -> None:
     with pytest.raises(ValueError, match=r"missing required columns: .*'image_path'"):
         create_patch_manifest(pd.DataFrame({"image_id": ["sample"]}))
+
+
+def test_patch_manifest_rejects_mismatched_mask_dimensions(tmp_path: Path) -> None:
+    image_path = tmp_path / "image.png"
+    mask_path = tmp_path / "mask.png"
+    Image.fromarray(np.zeros((4, 4), dtype=np.uint8)).save(image_path)
+    Image.fromarray(np.zeros((3, 4), dtype=np.uint8)).save(mask_path)
+    split = pd.DataFrame(
+        [
+            {
+                "image_id": "sample",
+                "image_path": image_path,
+                "is_defective": True,
+                "defect_name": "broken_end",
+                "fabric_code": "01",
+                "mask_paths": str(mask_path),
+                "split": "train",
+            }
+        ]
+    )
+
+    with pytest.raises(ValueError, match="Mask dimension mismatch for sample"):
+        create_patch_manifest(split)
