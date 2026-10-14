@@ -80,15 +80,19 @@ def _augment(
     photometric_range = (0.85, 1.15) if profile == "robust" else (0.92, 1.08)
     brightness = float(np.random.uniform(*photometric_range))
     contrast = float(np.random.uniform(*photometric_range))
-    image = (image - image.mean()) * contrast + image.mean()
-    image = image * brightness
+    mean = image.mean()
+    image -= mean
+    image *= contrast
+    image += mean
+    image *= brightness
     if profile == "robust" and np.random.random() < 0.25:
         sigma = float(np.random.uniform(0.2, 1.2))
         image = cv2.GaussianBlur(image, (0, 0), sigmaX=sigma)
     if np.random.random() < (0.4 if profile == "robust" else 0.25):
         noise_limit = 5.0 / 255.0 if profile == "robust" else 0.015
         image += np.random.normal(0.0, np.random.uniform(0.0, noise_limit), image.shape)
-    return np.clip(image, 0.0, 1.0), mask
+    np.clip(image, 0.0, 1.0, out=image)
+    return image, mask
 
 
 class AitexPatchDataset(Dataset[tuple[torch.Tensor, torch.Tensor]]):
