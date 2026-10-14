@@ -44,3 +44,13 @@ def test_focal_dice_loss_matches_probability_definition() -> None:
     ).mean()
 
     assert torch.allclose(loss(logits, targets), expected)
+
+
+def test_dice_half_precision_large_masks_have_finite_gradients() -> None:
+    logits = torch.full((1, 1, 256, 256), 2.0, dtype=torch.float16, requires_grad=True)
+    targets = torch.ones_like(logits)
+    loss = DiceLoss()(logits, targets)
+    reference = DiceLoss()(logits.detach().float(), targets.float())
+    torch.testing.assert_close(loss, reference)
+    loss.backward()
+    assert torch.isfinite(logits.grad).all()

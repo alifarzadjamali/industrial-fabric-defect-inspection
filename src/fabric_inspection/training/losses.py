@@ -17,6 +17,11 @@ class DiceLoss(nn.Module):
         self.smooth = smooth
 
     def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        # Half-precision sums can overflow on full-size foreground masks.
+        if logits.dtype in (torch.float16, torch.bfloat16):
+            logits = logits.float()
+        if targets.dtype in (torch.float16, torch.bfloat16):
+            targets = targets.float()
         probabilities = torch.sigmoid(logits).flatten(1)
         targets = targets.flatten(1)
         intersection = (probabilities * targets).sum(dim=1)
