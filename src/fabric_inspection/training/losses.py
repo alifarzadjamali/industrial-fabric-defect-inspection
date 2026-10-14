@@ -50,9 +50,13 @@ class BCEDiceLoss(nn.Module):
         self.dice = DiceLoss()
 
     def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        if self.bce_weight == 0:
+            return self.dice_weight * self.dice(logits, targets)
         bce = F.binary_cross_entropy_with_logits(
             logits, targets, pos_weight=self.positive_pixel_weight
         )
+        if self.dice_weight == 0:
+            return self.bce_weight * bce
         return self.bce_weight * bce + self.dice_weight * self.dice(logits, targets)
 
 
@@ -82,10 +86,14 @@ class FocalDiceLoss(nn.Module):
         self.dice = DiceLoss()
 
     def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        if self.focal_weight == 0:
+            return self.dice_weight * self.dice(logits, targets)
         bce = F.binary_cross_entropy_with_logits(logits, targets, reduction="none")
         # BCE is ``-log(p_t)``, so this recovers the true-class probability
         # without a separate sigmoid and the associated full-size temporaries.
         probability_true = torch.exp(-bce)
         alpha_true = self.alpha * targets + (1 - self.alpha) * (1 - targets)
         focal = (alpha_true * (1 - probability_true).pow(self.gamma) * bce).mean()
+        if self.dice_weight == 0:
+            return self.focal_weight * focal
         return self.focal_weight * focal + self.dice_weight * self.dice(logits, targets)
