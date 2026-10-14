@@ -17,11 +17,10 @@ def segmentation_counts(prediction: np.ndarray, target: np.ndarray) -> tuple[int
     target = np.asarray(target, dtype=bool)
     if prediction.shape != target.shape:
         raise ValueError(f"Shape mismatch: {prediction.shape} != {target.shape}")
-    true_positive = int(np.logical_and(prediction, target).sum())
-    false_positive = int(np.logical_and(prediction, ~target).sum())
-    false_negative = int(np.logical_and(~prediction, target).sum())
-    # The remaining pixels are true negatives; deriving this avoids one more
-    # full-size boolean temporary for every segmentation map.
+    true_positive = int(np.count_nonzero(prediction & target))
+    false_positive = int(np.count_nonzero(prediction)) - true_positive
+    false_negative = int(np.count_nonzero(target)) - true_positive
+    # Derive errors from marginal counts to avoid full-size boolean temporaries.
     true_negative = prediction.size - true_positive - false_positive - false_negative
     return true_positive, false_positive, false_negative, true_negative
 
@@ -59,10 +58,7 @@ def classification_metrics(
         raise ValueError("Classification targets and scores must have equal length")
     if score is not None and not np.isfinite(score).all():
         raise ValueError("Classification scores must be finite")
-    tp = int(np.logical_and(prediction, target).sum())
-    fp = int(np.logical_and(prediction, ~target).sum())
-    fn = int(np.logical_and(~prediction, target).sum())
-    tn = target.size - tp - fp - fn
+    tp, fp, fn, tn = segmentation_counts(prediction, target)
     auc: float | None = None
     if score is not None and target.any() and not target.all():
         auc = float(roc_auc_score(target, score))
