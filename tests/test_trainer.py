@@ -49,3 +49,14 @@ def test_epoch_rejects_invalid_metric_thresholds(threshold: float) -> None:
             metric_threshold=threshold,
             progress_bar=False,
         )
+
+
+def test_epoch_loss_uses_processed_sample_count() -> None:
+    logits = torch.zeros(3, 1, 2, 2)
+    targets = torch.zeros_like(logits)
+    loader = DataLoader(TensorDataset(logits, targets), batch_size=2, drop_last=True)
+    criterion = nn.BCEWithLogitsLoss()
+    metrics = _run_epoch(
+        nn.Identity(), loader, criterion, torch.device("cpu"), 0.5, progress_bar=False
+    )
+    assert metrics["loss"] == pytest.approx(criterion(logits[:2], targets[:2]).item())

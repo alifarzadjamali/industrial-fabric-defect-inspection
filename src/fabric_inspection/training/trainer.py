@@ -51,8 +51,9 @@ def _run_epoch(
     metric_logit = math.log(metric_threshold / (1.0 - metric_threshold))
     training = optimizer is not None
     model.train(training)
-    total_loss = 0.0
-    true_positive = false_positive = false_negative = 0
+    total_loss = torch.zeros((), device=device, dtype=torch.float64)
+    counts = torch.zeros(3, device=device, dtype=torch.int64)
+    sample_count = 0
     progress = tqdm(
         loader,
         leave=False,
@@ -79,19 +80,26 @@ def _run_epoch(
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
                 scaler.step(optimizer)
                 scaler.update()
-        total_loss += float(loss.detach()) * images.shape[0]
+        total_loss += loss.detach().double() * images.shape[0]
+        sample_count += images.shape[0]
         predictions = logits.detach() >= metric_logit
         target_mask = targets >= 0.5
-        batch_true_positive = int((predictions & target_mask).sum())
-        true_positive += batch_true_positive
-        false_positive += int(predictions.sum()) - batch_true_positive
-        false_negative += int(target_mask.sum()) - batch_true_positive
-        progress.set_postfix(loss=f"{float(loss.detach()):.4f}")
+        counts += torch.stack(
+            ((predictions & target_mask).sum(), predictions.sum(), target_mask.sum())
+        )
+        if progress_bar:
+            progress.set_postfix(loss=f"{float(loss.detach()):.4f}")
+    if sample_count == 0:
+        raise ValueError("Epoch requires at least one sample")
+    # Transfer aggregate counts once instead of synchronizing for every batch.
+    true_positive, predicted_positive, target_positive = counts.tolist()
+    false_positive = predicted_positive - true_positive
+    false_negative = target_positive - true_positive
     dice_denominator = 2 * true_positive + false_positive + false_negative
     dice = 2 * true_positive / dice_denominator if dice_denominator else 1.0
     iou_denominator = true_positive + false_positive + false_negative
     iou = true_positive / iou_denominator if iou_denominator else 1.0
-    return {"loss": total_loss / len(loader.dataset), "dice": dice, "iou": iou}
+    return {"loss": total_loss.item() / sample_count, "dice": dice, "iou": iou}
 
 
 def _environment_metadata(device: torch.device) -> dict[str, object]:
