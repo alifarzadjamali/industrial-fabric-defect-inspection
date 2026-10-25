@@ -98,6 +98,8 @@ def classification_threshold_metrics(
 
     target = np.asarray(list(targets), dtype=bool)
     score = np.asarray(list(scores), dtype=float)
+    if target.ndim != 1 or score.ndim != 1:
+        raise ValueError("Classification threshold inputs must be one-dimensional")
     if target.size == 0:
         raise ValueError("Classification threshold search requires at least one sample")
     if target.shape != score.shape:
