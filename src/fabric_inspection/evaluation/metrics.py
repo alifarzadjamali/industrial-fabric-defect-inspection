@@ -96,7 +96,11 @@ def classification_threshold_metrics(
 ) -> list[dict[str, float | int | list[list[int]] | None]]:
     """Evaluate every score-derived threshold using one sorted cumulative pass."""
 
-    if not threshold_name or threshold_name in {"f1", "accuracy", "roc_auc", "confusion_matrix"}:
+    metric_names = {
+        "accuracy", "precision", "recall", "f1", "roc_auc", "confusion_matrix",
+        "true_positives", "false_positives", "false_negatives", "true_negatives",
+    }
+    if not threshold_name or threshold_name in metric_names:
         raise ValueError("Threshold name must be non-empty and distinct from metric names")
 
     target = np.asarray(list(targets), dtype=bool)
