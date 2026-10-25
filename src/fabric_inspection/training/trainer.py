@@ -160,7 +160,10 @@ def train(config: dict[str, object], config_path: Path) -> dict[str, object]:
         hard_negative_multiplier=float(data_config.get("hard_negative_multiplier", 1.0)),
     )
     model = ResNet18UNet(pretrained=bool(config["model"]["pretrained"])).to(device)
-    if training_config.get("loss", "bce_dice") == "focal_dice":
+    loss_name = training_config.get("loss", "bce_dice")
+    if loss_name not in {"bce_dice", "focal_dice"}:
+        raise ValueError(f"Unsupported training loss: {loss_name}")
+    if loss_name == "focal_dice":
         criterion = FocalDiceLoss(
             focal_weight=float(training_config["focal_weight"]),
             dice_weight=float(training_config["dice_weight"]),
