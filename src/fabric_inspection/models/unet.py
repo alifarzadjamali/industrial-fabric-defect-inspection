@@ -60,4 +60,7 @@ class ResNet18UNet(nn.Module):
         decoded = self.decoder3(decoded, level2)
         decoded = self.decoder2(decoded, level1)
         decoded = self.decoder1(decoded, stem)
-        return self.final(decoded)
+        logits = self.final(decoded)
+        if logits.shape[-2:] != inputs.shape[-2:]:
+            logits = F.interpolate(logits, size=inputs.shape[-2:], mode="bilinear", align_corners=False)
+        return logits
