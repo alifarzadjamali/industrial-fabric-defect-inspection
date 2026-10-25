@@ -72,7 +72,7 @@ def _classification_metrics_from_counts(
 ) -> dict[str, float | int | list[list[int]] | None]:
     precision = safe_divide(tp, tp + fp)
     recall = safe_divide(tp, tp + fn)
-    f1 = safe_divide(2 * precision * recall, precision + recall)
+    f1 = safe_divide(2 * tp, 2 * tp + fp + fn)
     return {
         "accuracy": safe_divide(tp + tn, tp + fp + fn + tn),
         "precision": precision,
