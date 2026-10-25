@@ -21,6 +21,8 @@ class DiceLoss(nn.Module):
             raise ValueError(
                 f"Dice logits and targets must have equal shapes: {logits.shape} != {targets.shape}"
             )
+        if logits.numel() == 0:
+            raise ValueError("Dice loss requires at least one pixel")
         # Half-precision sums can overflow on full-size foreground masks.
         if logits.dtype in (torch.float16, torch.bfloat16):
             logits = logits.float()
