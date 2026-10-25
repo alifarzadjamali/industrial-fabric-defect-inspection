@@ -207,6 +207,8 @@ def _segmentation_summary(
 def select_segmentation_threshold(
     images: list[ImagePrediction], candidates: list[float]
 ) -> tuple[float, pd.DataFrame]:
+    if not images:
+        raise ValueError("At least one validation image is required")
     if not candidates:
         raise ValueError("At least one segmentation threshold candidate is required")
     thresholds = np.asarray(candidates, dtype=np.float64)
