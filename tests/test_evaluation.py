@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from fabric_inspection.evaluation.model_evaluator import (
     ImagePrediction,
@@ -17,6 +18,16 @@ def test_threshold_selection_uses_dice() -> None:
     threshold, search = select_segmentation_threshold([image], [0.3, 0.5, 0.7])
     assert threshold == 0.5
     assert float(search.loc[search["segmentation_threshold"] == 0.5, "dice"].iloc[0]) == 1.0
+
+
+def test_threshold_selection_rejects_empty_images_and_invalid_probabilities() -> None:
+    with pytest.raises(ValueError, match="validation image"):
+        select_segmentation_threshold([], [0.5])
+    image = ImagePrediction("sample", "normal", False, np.zeros((2, 2)), np.zeros((2, 2)))
+    with pytest.raises(ValueError, match="finite probabilities"):
+        select_segmentation_threshold([image], [1.5])
+    with pytest.raises(ValueError, match="non-empty"):
+        largest_component_fraction(np.empty((0, 2), dtype=bool))
 
 
 def test_threshold_search_matches_individual_segmentation_summaries() -> None:
