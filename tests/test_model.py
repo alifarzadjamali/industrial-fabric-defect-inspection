@@ -18,6 +18,13 @@ def test_unet_output_and_combined_loss_backward() -> None:
     assert torch.isfinite(loss)
 
 
+def test_unet_preserves_odd_input_shape() -> None:
+    model = ResNet18UNet(pretrained=False).eval()
+    with torch.inference_mode():
+        output = model(torch.randn(1, 3, 65, 67))
+    assert output.shape == (1, 1, 65, 67)
+
+
 @pytest.mark.parametrize("loss", [DiceLoss, BCEDiceLoss, FocalDiceLoss])
 def test_losses_reject_invalid_configuration(loss: type[torch.nn.Module]) -> None:
     with pytest.raises(ValueError):
