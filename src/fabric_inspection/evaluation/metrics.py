@@ -96,6 +96,9 @@ def classification_threshold_metrics(
 ) -> list[dict[str, float | int | list[list[int]] | None]]:
     """Evaluate every score-derived threshold using one sorted cumulative pass."""
 
+    if not threshold_name or threshold_name in {"f1", "accuracy", "roc_auc", "confusion_matrix"}:
+        raise ValueError("Threshold name must be non-empty and distinct from metric names")
+
     target = np.asarray(list(targets), dtype=bool)
     score = np.asarray(list(scores), dtype=float)
     if target.ndim != 1 or score.ndim != 1:
