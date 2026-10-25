@@ -25,7 +25,7 @@ def _cached_grayscale(path: str) -> np.ndarray:
 
 
 def _parse_mask_paths(value: object) -> list[str]:
-    return [item for item in str(value).split("|") if item and item != "nan"]
+    return [item for raw in str(value).split("|") if (item := raw.strip()) and item != "nan"]
 
 
 def _normalise_grayscale(image: np.ndarray) -> np.ndarray:
