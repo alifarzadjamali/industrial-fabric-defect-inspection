@@ -51,11 +51,15 @@ def classification_metrics(
 ) -> dict[str, float | int | list[list[int]] | None]:
     target = np.asarray(list(targets), dtype=bool)
     prediction = np.asarray(list(predictions), dtype=bool)
+    if target.ndim != 1 or prediction.ndim != 1:
+        raise ValueError("Classification targets and predictions must be one-dimensional")
     if target.size == 0:
         raise ValueError("Classification metrics require at least one sample")
     if target.shape != prediction.shape:
         raise ValueError("Classification targets and predictions must have equal length")
     score = None if scores is None else np.asarray(list(scores), dtype=float)
+    if score is not None and score.ndim != 1:
+        raise ValueError("Classification scores must be one-dimensional")
     if score is not None and target.shape != score.shape:
         raise ValueError("Classification targets and scores must have equal length")
     if score is not None and not np.isfinite(score).all():
