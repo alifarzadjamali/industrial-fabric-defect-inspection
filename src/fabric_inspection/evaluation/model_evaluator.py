@@ -16,7 +16,7 @@ from PIL import Image
 from torch.utils.data import DataLoader
 
 from fabric_inspection.data.aitex import sha256_file
-from fabric_inspection.data.dataset import AitexPatchDataset, _seed_worker
+from fabric_inspection.data.dataset import AitexPatchDataset, _parse_mask_paths, _seed_worker
 from fabric_inspection.evaluation.metrics import (
     classification_metrics,
     classification_threshold_metrics,
@@ -135,15 +135,14 @@ def predict_source_images(
         with Image.open(row.image_path) as image_file:
             image = np.asarray(image_file.convert("L"))
         target = np.zeros_like(image, dtype=bool)
-        for value in str(row.mask_paths).split("|"):
-            if value and value != "nan":
-                with Image.open(value) as mask_file:
-                    mask = np.asarray(mask_file.convert("L"))
-                    if mask.shape != image.shape:
-                        raise ValueError(
-                            f"Mask dimensions {mask.shape} do not match {image.shape}: {value}"
-                        )
-                    target |= mask > 0
+        for value in _parse_mask_paths(row.mask_paths):
+            with Image.open(value) as mask_file:
+                mask = np.asarray(mask_file.convert("L"))
+                if mask.shape != image.shape:
+                    raise ValueError(
+                        f"Mask dimensions {mask.shape} do not match {image.shape}: {value}"
+                    )
+                target |= mask > 0
         probability = predict_grayscale_image(
             model,
             image,
