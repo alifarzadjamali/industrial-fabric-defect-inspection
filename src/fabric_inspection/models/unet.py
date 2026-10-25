@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import torch
 from torch import nn
+from torch.nn import functional as F
 from torchvision.models import ResNet18_Weights, resnet18
 
 
@@ -21,7 +22,7 @@ class DecoderBlock(nn.Module):
         )
 
     def forward(self, inputs: torch.Tensor, skip: torch.Tensor) -> torch.Tensor:
-        inputs = self.upsample(inputs)
+        inputs = F.interpolate(inputs, size=skip.shape[-2:], mode="bilinear", align_corners=False)
         return self.layers(torch.cat([inputs, skip], dim=1))
 
 
