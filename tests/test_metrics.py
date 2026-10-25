@@ -56,6 +56,17 @@ def test_classification_metrics_reject_empty_inputs() -> None:
         classification_metrics([], [])
 
 
+def test_metrics_reject_invalid_counts_and_dimensions() -> None:
+    with pytest.raises(ValueError, match="non-negative"):
+        segmentation_metrics_from_counts(-1, 0, 0, 0)
+    with pytest.raises(ValueError, match="one-dimensional"):
+        classification_metrics([[True]], [[True]])
+    with pytest.raises(ValueError, match="one-dimensional"):
+        classification_threshold_metrics([[True]], [0.5], "threshold")
+    with pytest.raises(ValueError, match="distinct"):
+        classification_threshold_metrics([True], [0.5], "f1")
+
+
 def test_classification_threshold_metrics_match_individual_evaluations() -> None:
     targets = [False, True, False, True]
     scores = [0.2, 0.8, 0.2, 0.6]

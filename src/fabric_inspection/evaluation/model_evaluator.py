@@ -140,7 +140,9 @@ def predict_source_images(
                 with Image.open(value) as mask_file:
                     mask = np.asarray(mask_file.convert("L"))
                     if mask.shape != image.shape:
-                        raise ValueError(f"Mask dimensions {mask.shape} do not match {image.shape}: {value}")
+                        raise ValueError(
+                            f"Mask dimensions {mask.shape} do not match {image.shape}: {value}"
+                        )
                     target |= mask > 0
         probability = predict_grayscale_image(
             model,
@@ -243,9 +245,7 @@ def select_segmentation_threshold(
         false_positive = predicted_positive - true_positive
         false_negative = positive_total - true_positive
         true_negative = split_indices - positive_prefix[split_indices]
-        counts = np.column_stack(
-            (true_positive, false_positive, false_negative, true_negative)
-        )
+        counts = np.column_stack((true_positive, false_positive, false_negative, true_negative))
         totals += counts
         if image.target_defective:
             denominators = 2 * true_positive + false_positive + false_negative
@@ -330,9 +330,7 @@ def evaluate_images(
         counts_for_category += counts
     per_image = pd.DataFrame(rows)
     segmentation = segmentation_metrics_from_counts(*totals.tolist())
-    segmentation["macro_defective_dice"] = (
-        float(np.mean(defective_dice)) if defective_dice else 0.0
-    )
+    segmentation["macro_defective_dice"] = float(np.mean(defective_dice)) if defective_dice else 0.0
     classification = classification_metrics(
         per_image["target_defective"],
         per_image["predicted_defective"],
