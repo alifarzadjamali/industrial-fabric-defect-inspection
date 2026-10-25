@@ -138,7 +138,10 @@ def predict_source_images(
         for value in str(row.mask_paths).split("|"):
             if value and value != "nan":
                 with Image.open(value) as mask_file:
-                    target |= np.asarray(mask_file.convert("L")) > 0
+                    mask = np.asarray(mask_file.convert("L"))
+                    if mask.shape != image.shape:
+                        raise ValueError(f"Mask dimensions {mask.shape} do not match {image.shape}: {value}")
+                    target |= mask > 0
         probability = predict_grayscale_image(
             model,
             image,
