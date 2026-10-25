@@ -33,6 +33,15 @@ def test_dice_loss_rejects_mismatched_and_empty_inputs() -> None:
         loss(torch.empty(0, 1, 2, 2), torch.empty(0, 1, 2, 2))
 
 
+def test_zero_dice_weight_matches_bce() -> None:
+    logits = torch.tensor([[[[1.0, -1.0]]]])
+    targets = torch.tensor([[[[1.0, 0.0]]]])
+    actual = BCEDiceLoss(bce_weight=1.0, dice_weight=0.0, positive_pixel_weight=1.0)(
+        logits, targets
+    )
+    assert torch.allclose(actual, F.binary_cross_entropy_with_logits(logits, targets))
+
+
 @pytest.mark.parametrize("loss", [DiceLoss, BCEDiceLoss, FocalDiceLoss])
 def test_losses_reject_invalid_configuration(loss: type[torch.nn.Module]) -> None:
     with pytest.raises(ValueError):
