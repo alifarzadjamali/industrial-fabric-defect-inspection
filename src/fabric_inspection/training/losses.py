@@ -17,6 +17,10 @@ class DiceLoss(nn.Module):
         self.smooth = smooth
 
     def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        if logits.shape != targets.shape:
+            raise ValueError(
+                f"Dice logits and targets must have equal shapes: {logits.shape} != {targets.shape}"
+            )
         # Half-precision sums can overflow on full-size foreground masks.
         if logits.dtype in (torch.float16, torch.bfloat16):
             logits = logits.float()
