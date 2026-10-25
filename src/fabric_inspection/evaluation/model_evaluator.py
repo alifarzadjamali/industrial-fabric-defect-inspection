@@ -270,6 +270,8 @@ def select_segmentation_threshold(
 
 
 def largest_component_fraction(mask: np.ndarray) -> float:
+    if mask.ndim != 2 or mask.size == 0:
+        raise ValueError("Component mask must be a non-empty two-dimensional array")
     component_count, _, stats, _ = cv2.connectedComponentsWithStats(
         mask.astype(np.uint8), connectivity=8
     )
