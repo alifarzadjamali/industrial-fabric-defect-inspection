@@ -210,8 +210,8 @@ def select_segmentation_threshold(
     if not candidates:
         raise ValueError("At least one segmentation threshold candidate is required")
     thresholds = np.asarray(candidates, dtype=np.float64)
-    if not np.isfinite(thresholds).all():
-        raise ValueError("Segmentation threshold candidates must be finite")
+    if not np.isfinite(thresholds).all() or np.any((thresholds < 0) | (thresholds > 1)):
+        raise ValueError("Segmentation threshold candidates must be finite probabilities")
 
     totals = np.zeros((len(thresholds), 4), dtype=np.int64)
     defective_dice = np.zeros(len(thresholds), dtype=np.float64)
