@@ -11,7 +11,6 @@ from torchvision.models import ResNet18_Weights, resnet18
 class DecoderBlock(nn.Module):
     def __init__(self, input_channels: int, skip_channels: int, output_channels: int) -> None:
         super().__init__()
-        self.upsample = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False)
         self.layers = nn.Sequential(
             nn.Conv2d(input_channels + skip_channels, output_channels, 3, padding=1, bias=False),
             nn.BatchNorm2d(output_channels),
