@@ -28,6 +28,8 @@ def segmentation_counts(prediction: np.ndarray, target: np.ndarray) -> tuple[int
 def segmentation_metrics_from_counts(
     true_positive: int, false_positive: int, false_negative: int, true_negative: int
 ) -> dict[str, float | int]:
+    if min(true_positive, false_positive, false_negative, true_negative) < 0:
+        raise ValueError("Segmentation confusion counts must be non-negative")
     dice_denominator = 2 * true_positive + false_positive + false_negative
     union = true_positive + false_positive + false_negative
     dice = safe_divide(2 * true_positive, dice_denominator, zero_value=1.0)
