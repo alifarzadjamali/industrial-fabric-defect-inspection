@@ -25,6 +25,14 @@ def test_unet_preserves_odd_input_shape() -> None:
     assert output.shape == (1, 1, 65, 67)
 
 
+def test_dice_loss_rejects_mismatched_and_empty_inputs() -> None:
+    loss = DiceLoss()
+    with pytest.raises(ValueError, match="equal shapes"):
+        loss(torch.zeros(1, 1, 2, 2), torch.zeros(1, 1, 2, 1))
+    with pytest.raises(ValueError, match="at least one pixel"):
+        loss(torch.empty(0, 1, 2, 2), torch.empty(0, 1, 2, 2))
+
+
 @pytest.mark.parametrize("loss", [DiceLoss, BCEDiceLoss, FocalDiceLoss])
 def test_losses_reject_invalid_configuration(loss: type[torch.nn.Module]) -> None:
     with pytest.raises(ValueError):
