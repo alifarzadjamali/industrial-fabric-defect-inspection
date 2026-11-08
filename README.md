@@ -1,5 +1,7 @@
 # Industrial Fabric Defect Inspection
 
+The original code and documentation are available under the [MIT License](LICENSE). Figures that show AITEX fabric images are derived from the [AFID dataset](https://www.aitex.es/afid/) and are not relicensed as MIT; check the source terms before reusing them.
+
 This project finds defects in woven fabric and marks the affected pixels. Pass in a grayscale
 inspection image and the model returns a probability map for the suspected defect area. It can
 flag a potentially defective roll and show an operator where to look.
